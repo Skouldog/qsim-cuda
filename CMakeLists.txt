@@ -3,12 +3,20 @@ cmake_minimum_required(VERSION 3.15)
 
 project(qsim-cuda LANGUAGES CXX)
 
+option(QSIM_USE_CUDA "Build with CUDA backend" OFF)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 add_library(qsim_core src/state.cpp)
 target_include_directories(qsim_core PUBLIC include)
+
+if(QSIM_USE_CUDA)
+    enable_language(CUDA)
+    target_compile_definitions(qsim_core PUBLIC QSIM_USE_CUDA)
+    # toDO add CU files
+endif()
 
 add_executable(qsim_cli src/main.cpp)
 target_link_libraries(qsim_cli PRIVATE qsim_core)
