@@ -4,87 +4,82 @@
 #include <vector>
 #include <utility>
 
-// Forward-Declaring
-std::pair<int, int> getPairIndices(int pairNumber, int qubit);
-void indexPairIterator(std::vector<std::complex<double>> &stateVector, int qubit, const std::complex<double> (&matrix)[2][2]);
-
-/**
- * @brief Calculate new pair of Amplitudes
- * @param 2x2 Matrix and amplitude pair to be calculated
- * @return  pair of new amplitudes
- */
-std::pair<std::complex<double>, std::complex<double>> singleQubitGate(
-    const std::complex<double> (&matrix)[2][2],
-    std::pair<std::complex<double>, std::complex<double>> pairAmpOld)
+namespace qsim
 {
-    std::pair<std::complex<double>, std::complex<double>> pairAmpNew;
+    // Forward-Declaring
+    std::pair<std::size_t, std::size_t> getPairIndices(
+        std::size_t pairNumber, int qubit);
 
-    pairAmpNew.first = matrix[0][0] * pairAmpOld.first + matrix[0][1] * pairAmpOld.second;
-    pairAmpNew.second = matrix[1][0] * pairAmpOld.first + matrix[1][1] * pairAmpOld.second;
+     std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes
+     (const std::complex<double> (&matrix)[2][2], std::pair<std::complex<double>, std::complex<double>> pairAmpOld);
 
-    return pairAmpNew;
-}
+    
 
-/**
- * @brief XNOT Gate
- *@param State Vector by reference and chosen Qubit
- *@return none, the State gets manipulated in place
- */
-void singleXNOTGate(
-    std::vector<std::complex<double>> &stateVector,
-    int qubit)
-{
-
-    std::complex<double> first(0.0, 0.0), second(1.0, 0.0), // 0 1
-        third(1.0, 0.0), fourth(0.0, 0.0);                  // 1 0
-
-    std::complex<double> matrixXNOT[2][2] = {{first, second}, {third, fourth}};
-
-    indexPairIterator(stateVector, qubit, matrixXNOT);
-}
-
-/**
- * Helper Method
- * Iterate thorugh each pair and run singleQubitGate Function(calculate new Amps)
- */
-void indexPairIterator(std::vector<std::complex<double>> &stateVector, int qubit,
-                       const std::complex<double> (&matrix)[2][2])
-{
-
-    // Iterate through each pair
-    for (unsigned pairNumber = 0; pairNumber < stateVector.size() / 2; pairNumber++)
+    /**
+     *@brief applies 2x2 Matrix to Qubit
+     *@param State Vector by reference, chosen Qubit and 2x2 to be calculated with
+     *@return none, the State gets manipulated in place
+     */
+    void applySingleQubitGate(
+        std::vector<std::complex<double>> &stateVector,
+        int qubit,
+        const std::complex<double> (&matrix)[2][2])
     {
 
-        std::pair<int, int> pairIndices = getPairIndices(pairNumber, qubit);
+        // Iterate through each pair
+        for (std::size_t pairNumber = 0; pairNumber < stateVector.size() / 2; pairNumber++)
+        {
 
-        std::pair<std::complex<double>, std::complex<double>> pairAmplitudes;
+            std::pair<std::size_t, std::size_t> pairIndices = getPairIndices(pairNumber, qubit);
 
-        // Get Amplitudes from state
-        pairAmplitudes.first = stateVector[pairIndices.first];
-        pairAmplitudes.second = stateVector[pairIndices.second];
+            std::pair<std::complex<double>, std::complex<double>> pairAmplitudes;
 
-        pairAmplitudes = singleQubitGate(matrix, pairAmplitudes);
+            // Get Amplitudes from state
+            pairAmplitudes.first = stateVector[pairIndices.first];
+            pairAmplitudes.second = stateVector[pairIndices.second];
 
-        // write back to state
-        stateVector[pairIndices.first] = pairAmplitudes.first;
-        stateVector[pairIndices.second] = pairAmplitudes.second;
+            pairAmplitudes = calculateAmplitudes(matrix, pairAmplitudes);
+
+            // write back to state
+            stateVector[pairIndices.first] = pairAmplitudes.first;
+            stateVector[pairIndices.second] = pairAmplitudes.second;
+        }
     }
-}
 
-/**
- * Helper Method:
- * Calculates Indices given the pairnumber
- */
-std::pair<int, int> getPairIndices(int pairNumber, int qubit)
-{
+    /**
+     * @brief Helper Method: Calculates Indices given the pairnumber
+     * @param Pairnumber, chosen Qubit
+     * @return Indices for certain pair Number
+     */
+    std::pair<std::size_t, std::size_t> getPairIndices(std::size_t pairNumber, int qubit)
+    {
 
-    // find pair of amplitudes through bitmasking
-    int right = ((1 << qubit) - 1) & pairNumber;     // Bit masking 100 -> 011, only keeps bits of right from the inserted qubit.
-    int left = (pairNumber >> qubit) << (qubit + 1); // lose right side bits and fill with zeros
+        // find pair of amplitudes through bitmasking
+        std::size_t right = ((std::size_t{1} << qubit) - 1) & pairNumber;     // Bit masking 100 -> 011, only keeps bits of right from the inserted qubit.
+        std::size_t left = (pairNumber >> qubit) << (qubit + 1); // lose right side bits and fill with zeros
 
-    int pair0Index = left | right;              // e.g. Pair 01, q = 1 -> 001
-    int pair1Index = pair0Index | (1 << qubit); // 011
+        std::size_t pair0Index = left | right;              // e.g. Pair 01, q = 1 -> 001
+        std::size_t pair1Index = pair0Index | (std::size_t{1} << qubit); // 011
 
-    std::pair<int, int> pairIndices = {pair0Index, pair1Index};
-    return pairIndices;
+        std::pair<std::size_t, std::size_t> pairIndices = {pair0Index, pair1Index};
+        return pairIndices;
+    }
+
+    /**
+     * 
+     * @brief Helper: Calculate new pair of Amplitudes
+     * @param 2x2 Matrix and amplitude pair to be calculated
+     * @return  pair of new amplitudes
+     */
+    std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes(
+        const std::complex<double> (&matrix)[2][2],
+        std::pair<std::complex<double>, std::complex<double>> pairAmpOld)
+    {
+        std::pair<std::complex<double>, std::complex<double>> pairAmpNew;
+
+        pairAmpNew.first = matrix[0][0] * pairAmpOld.first + matrix[0][1] * pairAmpOld.second;
+        pairAmpNew.second = matrix[1][0] * pairAmpOld.first + matrix[1][1] * pairAmpOld.second;
+
+        return pairAmpNew;
+    }
 }
