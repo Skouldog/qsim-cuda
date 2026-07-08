@@ -15,10 +15,10 @@ void compareStates(const std::vector<std::complex<double>> &state, const std::ve
     }
 }
 
-void comparePairs(const std::pair<std::size_t, size_t> &gotPair, const std::pair<std::size_t, size_t> &wantPair, double tol, const std::string &msg)
+void comparePairs(const std::pair<std::size_t, size_t> &gotPair, const std::pair<std::size_t, size_t> &wantPair, const std::string &msg)
 {
-    expectClose(gotPair.first, wantPair.first, tol, msg + " :Pair.first: ");
-    expectClose(gotPair.second, wantPair.second, tol, msg + " :Pair.second: ");
+    expectTrue(gotPair.first == wantPair.first, msg + " :Pair.first: ");
+    expectTrue(gotPair.second == wantPair.second, msg + " :Pair.second: ");
 }
 
 void runGateTests()
@@ -83,20 +83,19 @@ void runGateTests()
 void runGetPairIndicesTest()
 {
 
-    const double cTol = 1e-9;
 
     std::pair<std::size_t, size_t> gotPair;
     std::pair<std::size_t, size_t> wantPair;
 
     gotPair = qsim::getPairIndices(0, 0);
     wantPair = {0, 1};
-    comparePairs(gotPair, wantPair, cTol, "Pair on Ind 0 with q0 > 0,1");
+    comparePairs(gotPair, wantPair, "Pair on Ind 0 with q0 > 0,1");
 
     gotPair = qsim::getPairIndices(0, 34);
-    wantPair = {0, std::pow(2, 34)};
-    comparePairs(gotPair, wantPair, cTol, "Pair on Ind 0 with q34 > 0,2^34");
+    wantPair = {0, std::size_t{1} << 34}; 
+    comparePairs(gotPair, wantPair, "Pair on Ind 0 with q34 > 0,2^34");
 
     gotPair = qsim::getPairIndices(7, 2);
     wantPair = {11, 15};
-    comparePairs(gotPair, wantPair, cTol, "Pair on Ind 7 with q2 > 11,15");
+    comparePairs(gotPair, wantPair, "Pair on Ind 7 with q2 > 11,15");
 }
