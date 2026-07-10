@@ -12,6 +12,7 @@ namespace qsim
         VectorState(std::size_t sizeQubits);
         double getProbabilityOfIndex(std::size_t index)const;
         std::complex<double> getAmplitudeOfIndex(std::size_t index)const;
+        void setAmplitudeOfIndex(std::size_t index, std::complex<double> amp);
         double getNorm()const;
         void restoreNorm();
         std::size_t sample(unsigned int seed)const;

@@ -33,6 +33,15 @@ namespace qsim
         }
 
         /**
+         * @brief set Amplitude of specific index
+         * @param index, amp 
+         */
+       void VectorState::setAmplitudeOfIndex(std::size_t index, std::complex<double> amp)
+        {
+             state.at(index) = amp;
+        }
+
+        /**
          * @brief Returns Norm of Vector(should be 1)
          */
         double VectorState::getNorm() const
