@@ -1,8 +1,7 @@
 #pragma once
 #include <complex>
-#include <vector>
 #include <cstddef>
-#include <cmath>
+#include <vector>
 
 namespace qsim
 {

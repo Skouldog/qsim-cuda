@@ -1,6 +1,7 @@
 #pragma once
-#include <vector>
 #include <complex>
+#include <cstddef>
+#include <utility>
 #include "qsim/state.hpp"
 
 namespace qsim
