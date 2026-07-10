@@ -2,6 +2,7 @@
 #include <vector>
 #include <complex>
 #include <string>
+#include <cstddef>
 #include "qsim/gates.hpp"
 #include "test_util.hpp"
 

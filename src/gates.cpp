@@ -1,8 +1,8 @@
-
-
 #include <complex>
 #include <vector>
 #include <utility>
+#include <cstddef>
+#include "qsim/gates.hpp"
 
 namespace qsim
 {
