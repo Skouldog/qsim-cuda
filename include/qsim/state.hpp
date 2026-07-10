@@ -1,6 +1,8 @@
 #pragma once
 #include <complex>
 #include <vector>
+#include <cstddef>
+#include <cmath>
 
 namespace qsim
 {
@@ -10,19 +12,20 @@ namespace qsim
 
     public:
         VectorState(std::size_t sizeQubits);
-        double getProbabilityOfIndex(std::size_t index)const;
-        std::complex<double> getAmplitudeOfIndex(std::size_t index)const;
+        double getProbabilityOfIndex(std::size_t index) const;
+        std::complex<double> getAmplitudeOfIndex(std::size_t index) const;
         void setAmplitudeOfIndex(std::size_t index, std::complex<double> amp);
-        double getNorm()const;
+        double getNorm() const;
         void restoreNorm();
-        std::size_t sample(unsigned int seed)const;
-        std::size_t sample()const;
+        std::size_t sample(unsigned int seed) const;
+        std::size_t sample() const;
 
+        std::complex<double> *data() { return state.data(); }
 
-         std::size_t getSize()const;
-        std::size_t getQubitSize()const;
-   private:
-       std::vector<std::complex<double>> state;
+        std::size_t getSize() const { return state.size(); }
+        std::size_t getQubitSize() const;
 
+    private:
+        std::vector<std::complex<double>> state;
     };
 }
