@@ -3,6 +3,7 @@
 #include <utility>
 #include <cstddef>
 #include "qsim/gates.hpp"
+#include "qsim/state.hpp"
 
 namespace qsim
 {
@@ -17,17 +18,20 @@ namespace qsim
 
     /**
      *@brief applies 2x2 Matrix to Qubit
-     *@param State Vector by reference, chosen Qubit and 2x2 to be calculated with
+     *@param State Vector by reference, chosen qubit and 2x2 matrix to be calculated with
      *@return none, the State gets manipulated in place
      */
     void applySingleQubitGate(
-        std::vector<std::complex<double>> &stateVector,
+       qsim::VectorState& stateVector,
         int qubit,
         const std::complex<double> (&matrix)[2][2])
     {
 
+        std::complex<double>* ptrStateVector = stateVector.data();
+
+
         // Iterate through each pair
-        for (std::size_t pairNumber = 0; pairNumber < stateVector.size() / 2; pairNumber++)
+        for (std::size_t pairNumber = 0; pairNumber < stateVector.getSize() / 2; pairNumber++)
         {
 
             std::pair<std::size_t, std::size_t> pairIndices = getPairIndices(pairNumber, qubit);
@@ -35,14 +39,14 @@ namespace qsim
             std::pair<std::complex<double>, std::complex<double>> pairAmplitudes;
 
             // Get Amplitudes from state
-            pairAmplitudes.first = stateVector[pairIndices.first];
-            pairAmplitudes.second = stateVector[pairIndices.second];
+            pairAmplitudes.first = ptrStateVector[pairIndices.first];
+            pairAmplitudes.second = ptrStateVector[pairIndices.second];
 
             pairAmplitudes = calculateAmplitudes(matrix, pairAmplitudes);
 
             // write back to state
-            stateVector[pairIndices.first] = pairAmplitudes.first;
-            stateVector[pairIndices.second] = pairAmplitudes.second;
+            ptrStateVector[pairIndices.first] = pairAmplitudes.first;
+            ptrStateVector[pairIndices.second] = pairAmplitudes.second;
         }
     }
 

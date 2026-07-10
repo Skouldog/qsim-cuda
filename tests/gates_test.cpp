@@ -6,13 +6,14 @@
 #include "qsim/gates.hpp"
 #include "test_util.hpp"
 
-void compareStates(const std::vector<std::complex<double>> &state, const std::vector<std::complex<double>> &wantVec, double tol, const std::string &msg)
+void compareStates(qsim::VectorState &gotVectorState, const std::vector<std::complex<double>> &wantVec, double tol, const std::string &msg)
 {
-    expectTrue(state.size() == wantVec.size(), msg + " (size mismatch)");
+    std::complex<double>* ptrStateVector = gotVectorState.data();
+    expectTrue(gotVectorState.getSize() == wantVec.size(), msg + " (size mismatch)");
 
-    for (std::size_t i = 0; i < state.size(); i++)
+    for (std::size_t i = 0; i < gotVectorState.getSize(); i++)
     {
-        expectClose(state.at(i), wantVec.at(i), tol, msg);
+        expectClose(ptrStateVector[i], wantVec.at(i), tol, msg);
     }
 }
 
@@ -25,8 +26,12 @@ void comparePairs(const std::pair<std::size_t, size_t> &gotPair, const std::pair
 void runGateTests()
 {
     const double cTol = 1e-9;
-    std::vector<std::complex<double>> stateOneQubit = {{1, 0}, {0, 0}};
-    std::vector<std::complex<double>> stateThreeQubit = {{1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
+    qsim::VectorState stateOneQubit(1);
+    qsim::VectorState stateThreeQubit(3);
+
+
+  
+
 
     /*
      * H Gate Tests
@@ -35,6 +40,7 @@ void runGateTests()
     std::complex<double> matrixH[2][2] = {
         {{s, 0}, {s, 0}},
         {{s, 0}, {-s, 0}}};
+
 
     qsim::applySingleQubitGate(stateOneQubit, 0, matrixH);
 

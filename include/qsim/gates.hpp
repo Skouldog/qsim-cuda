@@ -1,11 +1,12 @@
 #pragma once
 #include <vector>
 #include <complex>
+#include "qsim/state.hpp"
 
 namespace qsim
 {
 
-    void applySingleQubitGate(std::vector<std::complex<double>> &stateVector,
+    void applySingleQubitGate(qsim::VectorState& stateVector,
                               int qubit,
                               const std::complex<double> (&matrix)[2][2]);
 
