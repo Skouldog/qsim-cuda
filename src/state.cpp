@@ -3,22 +3,22 @@
 #include <cmath>
 #include <numeric>
 #include <random>
+#include <cstddef>
+#include "qsim/state.hpp"
 
 namespace qsim
 {
 
-    class VectorState
-    {
-    public:
-        std::vector<std::complex<double>> state;
 
-        VectorState(std::size_t sizeQubits) : state((size_t{1} << sizeQubits)) { state.at(0) = {1, 0}; }
+    
+
+        VectorState::VectorState(std::size_t sizeQubits) : state((size_t{1} << sizeQubits)) { state.at(0) = {1, 0}; }
 
         /**
          * @brief Returns Probability of specific index
          * @return double
          */
-        double getProbabilityOfIndex(std::size_t index) const
+        double VectorState::getProbabilityOfIndex(std::size_t index) const
         {
             return std::norm(state.at(index));
         }
@@ -27,7 +27,7 @@ namespace qsim
          * @brief Returns Amplitude of specific index
          * @return complex <double>
          */
-        std::complex<double> getAmplitudeOfIndex(std::size_t index) const
+        std::complex<double> VectorState::getAmplitudeOfIndex(std::size_t index) const
         {
             return state.at(index);
         }
@@ -35,7 +35,7 @@ namespace qsim
         /**
          * @brief Returns Norm of Vector(should be 1)
          */
-        double getNorm() const
+        double VectorState::getNorm() const
         {
             double sum = 0;
             for (const auto &amp : state)
@@ -48,7 +48,7 @@ namespace qsim
         /**
          * @brief Restore Norm to 1, to fix rounding errors
          */
-        void restoreNorm()
+        void VectorState::restoreNorm()
         {
 
             double norm = getNorm();
@@ -67,7 +67,7 @@ namespace qsim
          * @return Random Index
          */
 
-        std::size_t sample(unsigned int seed) const
+        std::size_t VectorState::sample(unsigned int seed) const
         {
 
             std::mt19937 gen(seed);
@@ -91,7 +91,7 @@ namespace qsim
         /**
          * @overload
          */
-        std::size_t sample() const
+        std::size_t VectorState::sample() const
         {
 
             std::random_device rd;
@@ -100,6 +100,8 @@ namespace qsim
 
             return sample(seed);
         }
-    };
 
-}
+        std::size_t VectorState::getSize()const { return state.size(); }
+        std::size_t VectorState::getQubitSize()const { return std::log2(state.size()); }
+    }
+
