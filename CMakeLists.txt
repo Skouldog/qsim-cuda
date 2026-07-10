@@ -21,7 +21,12 @@ endif()
 add_executable(qsim_cli src/main.cpp)
 target_link_libraries(qsim_cli PRIVATE qsim_core)
 
-add_executable(qsim_tests tests/main.cpp tests/gates_test.cpp tests/test_util.cpp)
+add_executable(qsim_tests 
+tests/main.cpp 
+tests/gates_test.cpp 
+tests/test_util.cpp 
+tests/state_test.cpp
+)
 target_link_libraries(qsim_tests PRIVATE qsim_core)
 
 add_executable(qsim_bench benchmarks/main.cpp)
