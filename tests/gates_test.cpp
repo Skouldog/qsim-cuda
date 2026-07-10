@@ -8,15 +8,15 @@
 
 #include "test_util.hpp"
 
-void compareStates(qsim::VectorState& gotVectorState,
-                   const std::vector<std::complex<double>>& wantVec, double tol,
+void compareStates(qsim::VectorState& got,
+                   const std::vector<std::complex<double>>& want, double tol,
                    const std::string& msg) {
-  std::complex<double>* ptrStateVector = gotVectorState.data();
-  expectTrue(gotVectorState.getSize() == wantVec.size(),
+  std::complex<double>* ptrStateVector = got.data();
+  expectTrue(got.getSize() == want.size(),
              msg + " (size mismatch)");
 
-  for (std::size_t i = 0; i < gotVectorState.getSize(); i++) {
-    expectClose(ptrStateVector[i], wantVec.at(i), tol, msg);
+  for (std::size_t i = 0; i < got.getSize(); i++) {
+    expectClose(ptrStateVector[i], want.at(i), tol, msg);
   }
 }
 

@@ -9,8 +9,8 @@
 namespace qsim {
 
 VectorState::VectorState(std::size_t sizeQubits)
-    : state((size_t{1} << sizeQubits)) {
-  state.at(0) = {1, 0};
+    : amplitudes((size_t{1} << sizeQubits)) {
+  amplitudes.at(0) = {1, 0};
 }
 
 /**
@@ -18,7 +18,7 @@ VectorState::VectorState(std::size_t sizeQubits)
  * @return double
  */
 double VectorState::getProbabilityOfIndex(std::size_t index) const {
-  return std::norm(state.at(index));
+  return std::norm(amplitudes.at(index));
 }
 
 /**
@@ -26,7 +26,7 @@ double VectorState::getProbabilityOfIndex(std::size_t index) const {
  * @return complex <double>
  */
 std::complex<double> VectorState::getAmplitudeOfIndex(std::size_t index) const {
-  return state.at(index);
+  return amplitudes.at(index);
 }
 
 /**
@@ -35,7 +35,7 @@ std::complex<double> VectorState::getAmplitudeOfIndex(std::size_t index) const {
  */
 void VectorState::setAmplitudeOfIndex(std::size_t index,
                                       std::complex<double> amp) {
-  state.at(index) = amp;
+  amplitudes.at(index) = amp;
 }
 
 /**
@@ -43,7 +43,7 @@ void VectorState::setAmplitudeOfIndex(std::size_t index,
  */
 double VectorState::getNorm() const {
   double sum = 0;
-  for (const auto& amp : state) {
+  for (const auto& amp : amplitudes) {
     sum += std::norm(amp);
   }
   return std::sqrt(sum);
@@ -56,7 +56,7 @@ void VectorState::restoreNorm() {
   double norm = getNorm();
   if (norm < 1e-15) return;  // Catch 0 Vektor
 
-  for (auto& amp : state) {
+  for (auto& amp : amplitudes) {
     amp = amp / norm;
   }
 }
@@ -75,14 +75,15 @@ std::size_t VectorState::sample(unsigned int seed) const {
 
   std::size_t indexState = 0;
   double probability = 0;
-  for (const auto& amp : state) {
+  for (const auto& amp : amplitudes) {
     probability += std::norm(amp);
     if (randomNumber < probability) {
       return indexState;
     }
     indexState++;
   }
-  return state.size() - 1;  // Fallback to last Index in Case of rounding Errors
+  return amplitudes.size() -
+         1;  // Fallback to last Index in Case of rounding Errors
 }
 
 /**
@@ -97,7 +98,7 @@ std::size_t VectorState::sample() const {
 }
 
 std::size_t VectorState::getQubitSize() const {
-  return std::log2(state.size());
+  return std::log2(amplitudes.size());
 }
 
 }  // namespace qsim

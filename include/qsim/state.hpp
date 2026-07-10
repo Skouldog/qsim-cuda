@@ -16,12 +16,12 @@ class VectorState {
   std::size_t sample(unsigned int seed) const;
   std::size_t sample() const;
 
-  std::complex<double>* data() { return state.data(); }
+  std::complex<double>* data() { return amplitudes.data(); }
 
-  std::size_t getSize() const { return state.size(); }
+  std::size_t getSize() const { return amplitudes.size(); }
   std::size_t getQubitSize() const;
 
  private:
-  std::vector<std::complex<double>> state;
+  std::vector<std::complex<double>> amplitudes;
 };
 }  // namespace qsim

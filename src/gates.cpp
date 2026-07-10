@@ -32,12 +32,12 @@ std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes(
  * with
  *@return none, the State gets manipulated in place
  */
-void applySingleQubitGate(qsim::VectorState& stateVector, int qubit,
+void applySingleQubitGate(qsim::VectorState& state, int qubit,
                           const std::complex<double> (&matrix)[2][2]) {
-  std::complex<double>* ptrStateVector = stateVector.data();
+  std::complex<double>* ptrAmps = state.data();
 
   // Iterate through each pair
-  for (std::size_t pairNumber = 0; pairNumber < stateVector.getSize() / 2;
+  for (std::size_t pairNumber = 0; pairNumber < state.getSize() / 2;
        pairNumber++) {
     std::pair<std::size_t, std::size_t> pairIndices =
         getPairIndices(pairNumber, qubit);
@@ -45,14 +45,14 @@ void applySingleQubitGate(qsim::VectorState& stateVector, int qubit,
     std::pair<std::complex<double>, std::complex<double>> pairAmplitudes;
 
     // Get Amplitudes from state
-    pairAmplitudes.first = ptrStateVector[pairIndices.first];
-    pairAmplitudes.second = ptrStateVector[pairIndices.second];
+    pairAmplitudes.first = ptrAmps[pairIndices.first];
+    pairAmplitudes.second = ptrAmps[pairIndices.second];
 
     pairAmplitudes = calculateAmplitudes(matrix, pairAmplitudes);
 
     // write back to state
-    ptrStateVector[pairIndices.first] = pairAmplitudes.first;
-    ptrStateVector[pairIndices.second] = pairAmplitudes.second;
+    ptrAmps[pairIndices.first] = pairAmplitudes.first;
+    ptrAmps[pairIndices.second] = pairAmplitudes.second;
   }
 }
 

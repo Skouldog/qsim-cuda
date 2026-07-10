@@ -82,11 +82,11 @@ void sampleTest() {
   qsim::VectorState state1(8);
   qsim::VectorState state2(8);
 
-  double ampProb = 1.0 / 16.0;
+  double amp = 1.0 / 16.0;
 
   for (std::size_t i = 0; i < state1.getSize(); i++) {
-    state1.setAmplitudeOfIndex(i, {ampProb, 0});
-    state2.setAmplitudeOfIndex(i, {ampProb, 0});
+    state1.setAmplitudeOfIndex(i, {amp, 0});
+    state2.setAmplitudeOfIndex(i, {amp, 0});
   }
 
   std::size_t sample1 = state1.sample(42);
