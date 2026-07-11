@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "qsim/gates.hpp"
 #include "test_util.hpp"
 
 void vectorInitTest() {
@@ -98,6 +99,57 @@ void sampleTest() {
   expectTrue(sample1 != sample2, "Different Seed > Different Sample");
 }
 
+void workflowTest() {
+  double tol = 1e-9;
+
+  qsim::VectorState state(10);
+
+  const double s = 1.0 / std::sqrt(2.0);
+  std::complex<double> matrixH[2][2] = {{{s, 0}, {s, 0}}, {{s, 0}, {-s, 0}}};
+
+  qsim::applySingleQubitGate(state, 9, matrixH);
+
+  double norm = state.getNorm();
+  expectClose(norm, 1, tol, " after H on q9");
+
+  std::complex<double> matrixX[2][2] = {{{0, 0}, {1, 0}}, {{1, 0}, {0, 0}}};
+
+  qsim::applySingleQubitGate(state, 2, matrixX);
+
+  norm = state.getNorm();
+  expectClose(norm, 1, tol, " after X on q9");
+
+  state.restoreNorm();
+  norm = state.getNorm();
+  expectClose(norm, 1, tol, "Restored Norm -> 1");
+
+  std::size_t sample = state.sample(42);
+  bool viableIndex = (sample == 4 || sample == 516);
+  expectTrue(viableIndex, "Sample Index 4 or 516");
+}
+
+void randomnessTest() {
+  qsim::VectorState state(1);
+  double tol = 0.1;
+
+  const double s = 1.0 / std::sqrt(2.0);
+  std::complex<double> matrixH[2][2] = {{{s, 0}, {s, 0}}, {{s, 0}, {-s, 0}}};
+  qsim::applySingleQubitGate(state, 0, matrixH);
+
+  std::size_t runs = 2000;
+  std::size_t zeros = 0;
+
+  for (std::size_t run = 0; run < runs; run++) {
+    if (state.sample() == 0) {
+      zeros++;
+    }
+  }
+
+  double zeroProb = (double)zeros / (double)runs;
+
+  expectClose(zeroProb, 0.5, tol, "Randomness 50/50");
+}
+
 void runStateTests() {
   vectorInitTest();
   getProbabilityOfIndexTest();
@@ -106,4 +158,6 @@ void runStateTests() {
   getNormTest();
   restoreNormTest();
   sampleTest();
+  workflowTest();
+  randomnessTest();
 }
