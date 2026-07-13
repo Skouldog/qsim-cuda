@@ -1,5 +1,6 @@
 #include "qsim/gates.hpp"
 
+#include <array>
 #include <cmath>
 #include <complex>
 #include <cstddef>
@@ -36,14 +37,13 @@ void runSingleGateTests() {
    * H Gate Tests
    */
   const double s = 1.0 / std::sqrt(2.0);
-  std::complex<double> matrixH[2][2] = {{{s, 0}, {s, 0}}, {{s, 0}, {-s, 0}}};
 
-  qsim::applySingleQubitGate(stateOneQubit, 0, matrixH);
+  qsim::applySingleQubitGate(stateOneQubit, 0, qsim::makeMatrixH());
 
   std::vector<std::complex<double>> want = {{s, 0}, {s, 0}};
   compareStates(stateOneQubit, want, cTol, "H on q0");
 
-  qsim::applySingleQubitGate(stateOneQubit, 0, matrixH);
+  qsim::applySingleQubitGate(stateOneQubit, 0, qsim::makeMatrixH());
 
   want = {{1, 0}, {0, 0}};
   compareStates(stateOneQubit, want, cTol, "H·H=I on q0");
@@ -51,32 +51,31 @@ void runSingleGateTests() {
   /*
    * X Gate Tests
    */
-  std::complex<double> matrixX[2][2] = {{{0, 0}, {1, 0}}, {{1, 0}, {0, 0}}};
 
   // Qubit 0
-  qsim::applySingleQubitGate(stateThreeQubit, 0, matrixX);
+  qsim::applySingleQubitGate(stateThreeQubit, 0, qsim::makeMatrixX());
   want = {{0, 0}, {1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
   compareStates(stateThreeQubit, want, cTol, "X on q0 -> index 1");
 
-  qsim::applySingleQubitGate(stateThreeQubit, 0, matrixX);
+  qsim::applySingleQubitGate(stateThreeQubit, 0, qsim::makeMatrixX());
   want = {{1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
   compareStates(stateThreeQubit, want, cTol, "X*X on q0 -> index 0");
 
   // Qubit 1
-  qsim::applySingleQubitGate(stateThreeQubit, 1, matrixX);
+  qsim::applySingleQubitGate(stateThreeQubit, 1, qsim::makeMatrixX());
   want = {{0, 0}, {0, 0}, {1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
   compareStates(stateThreeQubit, want, cTol, "X on q1 -> index 2");
 
-  qsim::applySingleQubitGate(stateThreeQubit, 1, matrixX);
+  qsim::applySingleQubitGate(stateThreeQubit, 1, qsim::makeMatrixX());
   want = {{1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
   compareStates(stateThreeQubit, want, cTol, "X*X on q1 -> index 0");
 
   // Qubit 2
-  qsim::applySingleQubitGate(stateThreeQubit, 2, matrixX);
+  qsim::applySingleQubitGate(stateThreeQubit, 2, qsim::makeMatrixX());
   want = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, {1, 0}, {0, 0}, {0, 0}, {0, 0}};
   compareStates(stateThreeQubit, want, cTol, "X on q2 -> index 4");
 
-  qsim::applySingleQubitGate(stateThreeQubit, 2, matrixX);
+  qsim::applySingleQubitGate(stateThreeQubit, 2, qsim::makeMatrixX());
   want = {{1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
   compareStates(stateThreeQubit, want, cTol, "X*X on q2 -> index 0");
 }

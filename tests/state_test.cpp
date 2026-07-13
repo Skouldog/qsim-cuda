@@ -1,5 +1,6 @@
 #include "qsim/state.hpp"
 
+#include <array>
 #include <complex>
 #include <cstddef>
 #include <vector>
@@ -104,17 +105,12 @@ void workflowTest() {
 
   qsim::VectorState state(10);
 
-  const double s = 1.0 / std::sqrt(2.0);
-  std::complex<double> matrixH[2][2] = {{{s, 0}, {s, 0}}, {{s, 0}, {-s, 0}}};
-
-  qsim::applySingleQubitGate(state, 9, matrixH);
+  qsim::applySingleQubitGate(state, 9, qsim::makeMatrixH());
 
   double norm = state.getNorm();
   expectClose(norm, 1, tol, " after H on q9");
 
-  std::complex<double> matrixX[2][2] = {{{0, 0}, {1, 0}}, {{1, 0}, {0, 0}}};
-
-  qsim::applySingleQubitGate(state, 2, matrixX);
+  qsim::applySingleQubitGate(state, 2, qsim::makeMatrixX());
 
   norm = state.getNorm();
   expectClose(norm, 1, tol, " after X on q9");
@@ -132,9 +128,7 @@ void randomnessTest() {
   qsim::VectorState state(1);
   double tol = 0.1;
 
-  const double s = 1.0 / std::sqrt(2.0);
-  std::complex<double> matrixH[2][2] = {{{s, 0}, {s, 0}}, {{s, 0}, {-s, 0}}};
-  qsim::applySingleQubitGate(state, 0, matrixH);
+  qsim::applySingleQubitGate(state, 0, qsim::makeMatrixH());
 
   std::size_t runs = 2000;
   std::size_t zeros = 0;

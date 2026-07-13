@@ -2,6 +2,8 @@
 
 #include <assert.h>
 
+#include <array>
+#include <cmath>
 #include <complex>
 #include <cstddef>
 #include <utility>
@@ -9,6 +11,14 @@
 #include "qsim/state.hpp"
 
 namespace qsim {
+
+Matrix2 makeMatrixH() {
+  const double s = 1.0 / std::sqrt(2.0);
+  return {{{{{s, 0}, {s, 0}}}, {{{s, 0}, {-s, 0}}}}};
+}
+
+Matrix2 makeMatrixX() { return {{{{{0, 0}, {1, 0}}}, {{{1, 0}, {0, 0}}}}}; }
+
 /**
  *
  * @brief Helper: Calculate new pair of Amplitudes
@@ -16,7 +26,7 @@ namespace qsim {
  * @return  pair of new amplitudes
  */
 std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes(
-    const std::complex<double> (&matrix)[2][2],
+    const Matrix2& matrix,
     std::pair<std::complex<double>, std::complex<double>> pairAmpOld) {
   std::pair<std::complex<double>, std::complex<double>> pairAmpNew;
 
@@ -35,7 +45,7 @@ std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes(
  *@return none, the State gets manipulated in place
  */
 void applySingleQubitGate(qsim::VectorState& state, int qubit,
-                          const std::complex<double> (&matrix)[2][2]) {
+                          const Matrix2& matrix) {
   std::complex<double>* ptrAmps = state.data();
 
   // Iterate through each pair
