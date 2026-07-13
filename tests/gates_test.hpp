@@ -1,4 +1,3 @@
 #pragma once
 
-void runGateTests();
-void runGetPairIndicesTest();
+void runGatesTest();

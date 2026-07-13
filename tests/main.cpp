@@ -5,8 +5,7 @@
 #include "test_util.hpp"
 
 int main() {
-  runGateTests();
-  runGetPairIndicesTest();
+  runGatesTest();
   runStateTests();
 
   if (failures == 0) std::cout << "all tests passed\n";

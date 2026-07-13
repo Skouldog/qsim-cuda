@@ -1,5 +1,7 @@
 #include "qsim/gates.hpp"
 
+#include <assert.h>
+
 #include <complex>
 #include <cstddef>
 #include <utility>
@@ -57,9 +59,30 @@ void applySingleQubitGate(qsim::VectorState& state, int qubit,
 }
 
 /**
+ * @brief Applies CNOT Gate to state
+ * @return None, State gets manipulated in place
+ */
+void applyCnotGate(qsim::VectorState& state, int controlBit, int targetBit) {
+  assert(controlBit != targetBit);
+  std::complex<double>* ptrAmps = state.data();
+
+  for (std::size_t pairNumber = 0; pairNumber < state.getSize() / 2;
+       pairNumber++) {
+    std::pair<std::size_t, std::size_t> pairIndices =
+        getPairIndices(pairNumber, targetBit);
+
+    if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
+      std::complex<double> temp = ptrAmps[pairIndices.second];
+      ptrAmps[pairIndices.second] = ptrAmps[pairIndices.first];
+      ptrAmps[pairIndices.first] = temp;
+    }
+  }
+}
+
+/**
  * @brief Helper Method: Calculates Indices given the pairnumber
  * @param Pairnumber, chosen Qubit
- * @return Indices for certain pair Number
+ * @return pair of Indices for certain pair Number
  */
 std::pair<std::size_t, std::size_t> getPairIndices(std::size_t pairNumber,
                                                    int qubit) {

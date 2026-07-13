@@ -6,14 +6,14 @@
 #include <string>
 #include <vector>
 
+#include "qsim/state.hpp"
 #include "test_util.hpp"
 
 void compareStates(qsim::VectorState& got,
                    const std::vector<std::complex<double>>& want, double tol,
                    const std::string& msg) {
   std::complex<double>* ptrStateVector = got.data();
-  expectTrue(got.getSize() == want.size(),
-             msg + " (size mismatch)");
+  expectTrue(got.getSize() == want.size(), msg + " (size mismatch)");
 
   for (std::size_t i = 0; i < got.getSize(); i++) {
     expectClose(ptrStateVector[i], want.at(i), tol, msg);
@@ -27,7 +27,7 @@ void comparePairs(const std::pair<std::size_t, size_t>& gotPair,
   expectTrue(gotPair.second == wantPair.second, msg + " :Pair.second: ");
 }
 
-void runGateTests() {
+void runSingleGateTests() {
   const double cTol = 1e-9;
   qsim::VectorState stateOneQubit(1);
   qsim::VectorState stateThreeQubit(3);
@@ -81,6 +81,28 @@ void runGateTests() {
   compareStates(stateThreeQubit, want, cTol, "X*X on q2 -> index 0");
 }
 
+void runCnotGateTests() {
+  qsim::VectorState state(3);
+
+  double cTol = 1e-19;
+
+  state.setAmplitudeOfIndex(0, {0.5, 0});
+  state.setAmplitudeOfIndex(1, {0.5, 0});
+  state.setAmplitudeOfIndex(2, {0.5, 0});
+  state.setAmplitudeOfIndex(3, {0.5, 0});
+
+  qsim::applyCnotGate(state, 0, 2);
+  std::vector<std::complex<double>> want = {
+      {0.5, 0}, {0, 0}, {0.5, 0}, {0, 0}, {0, 0}, {0.5, 0}, {0, 0}, {0.5, 0}};
+  compareStates(state, want, cTol, "CNOT(C0,C2)");
+
+  qsim::applyCnotGate(state, 0, 2);
+
+  want = {{0.5, 0}, {0.5, 0}, {0.5, 0}, {0.5, 0},
+          {0, 0},   {0, 0},   {0, 0},   {0, 0}};
+  compareStates(state, want, cTol, "CNOT*CNOT(C0,C2)= I");
+}
+
 void runGetPairIndicesTest() {
   std::pair<std::size_t, size_t> gotPair;
   std::pair<std::size_t, size_t> wantPair;
@@ -96,4 +118,10 @@ void runGetPairIndicesTest() {
   gotPair = qsim::getPairIndices(7, 2);
   wantPair = {11, 15};
   comparePairs(gotPair, wantPair, "Pair on Ind 7 with q2 > 11,15");
+}
+
+void runGatesTest() {
+  runSingleGateTests();
+  runCnotGateTests();
+  runGetPairIndicesTest();
 }
