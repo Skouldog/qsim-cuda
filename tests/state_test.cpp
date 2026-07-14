@@ -105,12 +105,12 @@ void workflowTest() {
 
   qsim::VectorState state(10);
 
-  qsim::applySingleQubitGate(state, 9, qsim::makeMatrixH());
+  qsim::applySingleQubitGate(state, 9, qsim::gates::h());
 
   double norm = state.getNorm();
   expectClose(norm, 1, tol, " after H on q9");
 
-  qsim::applySingleQubitGate(state, 2, qsim::makeMatrixX());
+  qsim::applySingleQubitGate(state, 2, qsim::gates::x());
 
   norm = state.getNorm();
   expectClose(norm, 1, tol, " after X on q9");
@@ -128,7 +128,7 @@ void randomnessTest() {
   qsim::VectorState state(1);
   double tol = 0.1;
 
-  qsim::applySingleQubitGate(state, 0, qsim::makeMatrixH());
+  qsim::applySingleQubitGate(state, 0, qsim::gates::h());
 
   std::size_t runs = 2000;
   std::size_t zeros = 0;

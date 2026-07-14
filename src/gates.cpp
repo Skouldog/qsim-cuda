@@ -14,25 +14,26 @@
 // Possible additions:  CZ, SWAP, Toffoli, controlled Rotation CR(θ)
 
 namespace qsim {
-
-Matrix2 makeMatrixH() {
+namespace gates {
+Matrix2 h() {
   const double s = 1.0 / std::sqrt(2.0);
   return {{{{{s, 0}, {s, 0}}}, {{{s, 0}, {-s, 0}}}}};
 }
 
-Matrix2 makeMatrixX() { return {{{{{0, 0}, {1, 0}}}, {{{1, 0}, {0, 0}}}}}; }
+Matrix2 x() { return {{{{{0, 0}, {1, 0}}}, {{{1, 0}, {0, 0}}}}}; }
 
-Matrix2 makeMatrixS() { return {{{{{1, 0}, {0, 0}}}, {{{0, 0}, {0, 1}}}}}; }
+Matrix2 s() { return {{{{{1, 0}, {0, 0}}}, {{{0, 0}, {0, 1}}}}}; }
 
-Matrix2 makeMatrixZ() { return {{{{{1, 0}, {0, 0}}}, {{{0, 0}, {-1, 0}}}}}; }
+Matrix2 z() { return {{{{{1, 0}, {0, 0}}}, {{{0, 0}, {-1, 0}}}}}; }
 
-Matrix2 makeMatrixT() {
-  std::complex<double> phase = std::polar(1.0,  std::numbers::pi  / 4.0);  // e^{iπ/4}
+Matrix2 t() {
+  std::complex<double> phase =
+      std::polar(1.0, std::numbers::pi / 4.0);  // e^{iπ/4}
 
   return {{{{{1, 0}, {0, 0}}}, {{{0, 0}, phase}}}};
 }
 
-Matrix2 makeMatrixRZ(double angle) {
+Matrix2 rz(double angle) {
   std::complex<double> diag0 =
       std::polar(1.0, -1.0 * angle / 2);  // e^{-i*angle/2}
 
@@ -41,6 +42,8 @@ Matrix2 makeMatrixRZ(double angle) {
 
   return {{{{diag0, {0, 0}}}, {{{0, 0}, diag1}}}};
 }
+
+}  // namespace gates
 
 /**
  *

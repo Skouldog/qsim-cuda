@@ -17,11 +17,12 @@ void applyCnotGate(qsim::VectorState& state, int controlBit, int targetBit);
 std::pair<std::size_t, std::size_t> getPairIndices(std::size_t pairNumber,
                                                    int qubit);
 
-Matrix2 makeMatrixH();
-Matrix2 makeMatrixX();
-Matrix2 makeMatrixS();
-Matrix2 makeMatrixZ();
-Matrix2 makeMatrixT();
-Matrix2 makeMatrixRZ(double angle);
-
+namespace gates {
+Matrix2 h();
+Matrix2 x();
+Matrix2 s();
+Matrix2 z();
+Matrix2 t();
+Matrix2 rz(double angle);
+}  // namespace gates
 }  // namespace qsim
