@@ -29,56 +29,54 @@ void comparePairs(const std::pair<std::size_t, size_t>& gotPair,
   expectTrue(gotPair.second == wantPair.second, msg + " :Pair.second: ");
 }
 
-void runSingleGateTests() {
+void runHGateTest() {
   const double cTol = 1e-9;
-  qsim::VectorState stateOneQubit(1);
-  qsim::VectorState stateThreeQubit(3);
+  qsim::VectorState state(1);
 
-  /*
-   * H Gate Tests
-   */
   const double s = 1.0 / std::sqrt(2.0);
 
-  qsim::applySingleQubitGate(stateOneQubit, 0, qsim::gates::h());
+  qsim::applySingleQubitGate(state, 0, qsim::gates::h());
 
   std::vector<std::complex<double>> want = {{s, 0}, {s, 0}};
-  compareStates(stateOneQubit, want, cTol, "H on q0");
+  compareStates(state, want, cTol, "H on q0");
 
-  qsim::applySingleQubitGate(stateOneQubit, 0, qsim::gates::h());
+  qsim::applySingleQubitGate(state, 0, qsim::gates::h());
 
   want = {{1, 0}, {0, 0}};
-  compareStates(stateOneQubit, want, cTol, "H·H=I on q0");
+  compareStates(state, want, cTol, "H·H=I on q0");
+}
 
-  /*
-   * X Gate Tests
-   */
+void runXGateTest() {
+  const double cTol = 1e-9;
+  qsim::VectorState state(3);
 
   // Qubit 0
-  qsim::applySingleQubitGate(stateThreeQubit, 0, qsim::gates::x());
-  want = {{0, 0}, {1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
-  compareStates(stateThreeQubit, want, cTol, "X on q0 -> index 1");
+  qsim::applySingleQubitGate(state, 0, qsim::gates::x());
+  std::vector<std::complex<double>> want = {{0, 0}, {1, 0}, {0, 0}, {0, 0},
+                                            {0, 0}, {0, 0}, {0, 0}, {0, 0}};
+  compareStates(state, want, cTol, "X on q0 -> index 1");
 
-  qsim::applySingleQubitGate(stateThreeQubit, 0, qsim::gates::x());
+  qsim::applySingleQubitGate(state, 0, qsim::gates::x());
   want = {{1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
-  compareStates(stateThreeQubit, want, cTol, "X*X on q0 -> index 0");
+  compareStates(state, want, cTol, "X*X on q0 -> index 0");
 
   // Qubit 1
-  qsim::applySingleQubitGate(stateThreeQubit, 1, qsim::gates::x());
+  qsim::applySingleQubitGate(state, 1, qsim::gates::x());
   want = {{0, 0}, {0, 0}, {1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
-  compareStates(stateThreeQubit, want, cTol, "X on q1 -> index 2");
+  compareStates(state, want, cTol, "X on q1 -> index 2");
 
-  qsim::applySingleQubitGate(stateThreeQubit, 1, qsim::gates::x());
+  qsim::applySingleQubitGate(state, 1, qsim::gates::x());
   want = {{1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
-  compareStates(stateThreeQubit, want, cTol, "X*X on q1 -> index 0");
+  compareStates(state, want, cTol, "X*X on q1 -> index 0");
 
   // Qubit 2
-  qsim::applySingleQubitGate(stateThreeQubit, 2, qsim::gates::x());
+  qsim::applySingleQubitGate(state, 2, qsim::gates::x());
   want = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, {1, 0}, {0, 0}, {0, 0}, {0, 0}};
-  compareStates(stateThreeQubit, want, cTol, "X on q2 -> index 4");
+  compareStates(state, want, cTol, "X on q2 -> index 4");
 
-  qsim::applySingleQubitGate(stateThreeQubit, 2, qsim::gates::x());
+  qsim::applySingleQubitGate(state, 2, qsim::gates::x());
   want = {{1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
-  compareStates(stateThreeQubit, want, cTol, "X*X on q2 -> index 0");
+  compareStates(state, want, cTol, "X*X on q2 -> index 0");
 }
 
 void runZGateTest() {
@@ -186,7 +184,8 @@ void runGetPairIndicesTest() {
 }
 
 void runGatesTest() {
-  runSingleGateTests();
+  runHGateTest();
+  runXGateTest();
   runZGateTest();
   runSGateTest();
   runTGateTest();
