@@ -14,5 +14,8 @@ build/
 .vscode/
 .DS_Store
 
+#Coverage
+build-cov
+coverage.*
 
 Skript.md
