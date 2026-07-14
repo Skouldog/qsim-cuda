@@ -1,8 +1,8 @@
 #pragma once
+#include <array>
 #include <complex>
 #include <cstddef>
 #include <utility>
-#include <array>
 
 #include "qsim/state.hpp"
 
@@ -19,5 +19,9 @@ std::pair<std::size_t, std::size_t> getPairIndices(std::size_t pairNumber,
 
 Matrix2 makeMatrixH();
 Matrix2 makeMatrixX();
+Matrix2 makeMatrixS();
+Matrix2 makeMatrixZ();
+Matrix2 makeMatrixT();
+Matrix2 makeMatrixRZ(double angle);
 
 }  // namespace qsim

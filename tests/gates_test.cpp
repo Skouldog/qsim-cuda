@@ -4,6 +4,7 @@
 #include <cmath>
 #include <complex>
 #include <cstddef>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -80,6 +81,71 @@ void runSingleGateTests() {
   compareStates(stateThreeQubit, want, cTol, "X*X on q2 -> index 0");
 }
 
+void runZGateTest() {
+  qsim::VectorState state(2);
+  double cTol = 1e-9;
+  state.setAmplitudeOfIndex(0, {0.0, 0.0});
+  state.setAmplitudeOfIndex(1, {1, 0});
+
+  qsim::applySingleQubitGate(state, 0, qsim::makeMatrixZ());
+  std::vector<std::complex<double>> want = {{0, 0}, {-1, 0}, {0, 0}, {0, 0}};
+  compareStates(state, want, cTol, "Z on q0 -> index 1 = -1");
+}
+
+void runSGateTest() {
+  qsim::VectorState state(2);
+  double cTol = 1e-9;
+  state.setAmplitudeOfIndex(0, {0.0, 0.0});
+  state.setAmplitudeOfIndex(1, {1, 0});
+
+  qsim::applySingleQubitGate(state, 0, qsim::makeMatrixS());
+  std::vector<std::complex<double>> want = {{0, 0}, {0, 1}, {0, 0}, {0, 0}};
+  compareStates(state, want, cTol, "S on q0 -> index 1=i");
+}
+
+void runTGateTest() {
+  qsim::VectorState state(2);
+  double cTol = 1e-9;
+
+  state.setAmplitudeOfIndex(0, {0.0, 0.5});
+  state.setAmplitudeOfIndex(1, {0.5, 0});
+  state.setAmplitudeOfIndex(2, {0.5, 0});
+  state.setAmplitudeOfIndex(3, {0.5, 0});
+
+  for (int run = 0; run < 8; run++) {
+    qsim::applySingleQubitGate(state, 1, qsim::makeMatrixT());
+  }
+
+  std::vector<std::complex<double>> want = {
+      {0.0, 0.5}, {0.5, 0}, {0.5, 0}, {0.5, 0}};
+  compareStates(state, want, cTol, "8xT on q1 ->  360° Spin state == state");
+
+  for (int run = 0; run < 4; run++) {
+    qsim::applySingleQubitGate(state, 0, qsim::makeMatrixT());
+  }
+
+  want = {{0.0, 0.5}, {-0.5, 0}, {0.5, 0}, {-0.5, 0}};
+  compareStates(state, want, cTol, "4xT on q0 ->  180° Spin ");
+}
+
+void runRZGateTest() {
+  qsim::VectorState state(2);
+  double cTol = 1e-9;
+  double angle = std::numbers::pi * 4;
+  std::vector<std::complex<double>> want = {{1, 0.0}, {0, 0}, {0.0, 0}, {0, 0}};
+  qsim::applySingleQubitGate(state, 1, qsim::makeMatrixRZ(angle));
+  compareStates(state, want, cTol, "RZ Identity (4Pi) on q1 ");
+
+  want = {{-1, 0.0}, {0, 0}, {0.0, 0}, {0, 0}};
+  qsim::applySingleQubitGate(state, 1, qsim::makeMatrixRZ(angle / 2));
+  compareStates(state, want, cTol, "RZ (2Pi) on q1 ");
+
+  state.setAmplitudeOfIndex(1, {1, 0});
+  want = {{1, 0.0}, {-1, 0}, {0.0, 0}, {0, 0}};
+  qsim::applySingleQubitGate(state, 1, qsim::makeMatrixRZ(angle / 2));
+  compareStates(state, want, cTol, "RZ (2Pi) on q1 ");
+}
+
 void runCnotGateTests() {
   qsim::VectorState state(3);
 
@@ -121,6 +187,10 @@ void runGetPairIndicesTest() {
 
 void runGatesTest() {
   runSingleGateTests();
+  runZGateTest();
+  runSGateTest();
+  runTGateTest();
+  runRZGateTest();
   runCnotGateTests();
   runGetPairIndicesTest();
 }

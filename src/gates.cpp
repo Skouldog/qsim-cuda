@@ -6,9 +6,12 @@
 #include <cmath>
 #include <complex>
 #include <cstddef>
+#include <numbers>
 #include <utility>
 
 #include "qsim/state.hpp"
+
+// Possible additions:  CZ, SWAP, Toffoli, controlled Rotation CR(θ)
 
 namespace qsim {
 
@@ -18,6 +21,26 @@ Matrix2 makeMatrixH() {
 }
 
 Matrix2 makeMatrixX() { return {{{{{0, 0}, {1, 0}}}, {{{1, 0}, {0, 0}}}}}; }
+
+Matrix2 makeMatrixS() { return {{{{{1, 0}, {0, 0}}}, {{{0, 0}, {0, 1}}}}}; }
+
+Matrix2 makeMatrixZ() { return {{{{{1, 0}, {0, 0}}}, {{{0, 0}, {-1, 0}}}}}; }
+
+Matrix2 makeMatrixT() {
+  std::complex<double> phase = std::polar(1.0,  std::numbers::pi  / 4.0);  // e^{iπ/4}
+
+  return {{{{{1, 0}, {0, 0}}}, {{{0, 0}, phase}}}};
+}
+
+Matrix2 makeMatrixRZ(double angle) {
+  std::complex<double> diag0 =
+      std::polar(1.0, -1.0 * angle / 2);  // e^{-i*angle/2}
+
+  std::complex<double> diag1 =
+      std::polar(1.0, 1.0 * angle / 2);  // e^{i*angle/2}
+
+  return {{{{diag0, {0, 0}}}, {{{0, 0}, diag1}}}};
+}
 
 /**
  *
@@ -40,8 +63,8 @@ std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes(
 
 /**
  *@brief applies 2x2 Matrix to Qubit
- *@param State Vector by reference, chosen qubit and 2x2 matrix to be calculated
- * with
+ *@param State Vector by reference, chosen qubit and 2x2 matrix to be
+ * calculated with
  *@return none, the State gets manipulated in place
  */
 void applySingleQubitGate(qsim::VectorState& state, int qubit,
@@ -98,8 +121,8 @@ std::pair<std::size_t, std::size_t> getPairIndices(std::size_t pairNumber,
                                                    int qubit) {
   // find pair of amplitudes through bitmasking
   std::size_t right = ((std::size_t{1} << qubit) - 1) &
-                      pairNumber;  // Bit masking 100 -> 011, only keeps bits of
-                                   // right from the inserted qubit.
+                      pairNumber;  // Bit masking 100 -> 011, only keeps bits
+                                   // of right from the inserted qubit.
   std::size_t left =
       (pairNumber >> qubit)
       << (qubit + 1);  // lose right side bits and fill with zeros
