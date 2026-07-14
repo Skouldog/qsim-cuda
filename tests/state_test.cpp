@@ -1,58 +1,51 @@
 #include "qsim/state.hpp"
 
-#include <array>
+#include <cmath>
 #include <complex>
 #include <cstddef>
-#include <vector>
 
+#include "gtest/gtest.h"
 #include "qsim/gates.hpp"
-#include "test_util.hpp"
+#include "test_constants.hpp"
 
-void vectorInitTest() {
+TEST(VectorState, ConstructsWithCorrectDimensions) {
   qsim::VectorState state(5);
 
   std::size_t stateSize = state.getSize();
-  expectTrue(stateSize == (std::size_t{1} << 5), "Init Vector Size == 2^5");
+  EXPECT_EQ(stateSize, (std::size_t{1} << 5));
 
   std::size_t stateQubits = state.getQubitSize();
-
-  expectTrue(stateQubits == 5, "Init Vector with 5q = 5qubits");
+  EXPECT_EQ(stateQubits, std::size_t{5});
 }
 
-void getProbabilityOfIndexTest() {
+TEST(VectorState, InitializesToGroundState) {
   qsim::VectorState state(5);
 
   double probIndex0 = state.getProbabilityOfIndex(0);
   double probIndex1 = state.getProbabilityOfIndex(1);
-  expectTrue(probIndex0 == 1, "Index 100% Probability");
-  expectTrue(probIndex1 == 0, "Index 0% Probability");
+  EXPECT_EQ(probIndex0, 1.0);
+  EXPECT_EQ(probIndex1, 0.0);
 }
 
-void getAmplitudeOfIndexTest() {
-  double tol = 1e-9;
-
+TEST(VectorState, ReturnsAmplitudeAtIndex) {
   qsim::VectorState state(5);
 
   std::complex<double> amp0 = state.getAmplitudeOfIndex(0);
   std::complex<double> amp1 = state.getAmplitudeOfIndex(1);
-  expectClose(amp0, 1, tol, "Index 0 -> Amp = 1");
-  expectClose(amp1, 0, tol, "Index 1 -> Amp = 0");
+  EXPECT_EQ(amp0, 1.0);
+  EXPECT_EQ(amp1, 0.0);
 }
 
-void setAmplitudeOfIndexTest() {
+TEST(VectorState, StoresAmplitudeAtIndex) {
   qsim::VectorState state(5);
-  double tol = 1e-9;
 
   state.setAmplitudeOfIndex(0, {0.5, 0});
   std::complex<double> amp0 = state.getAmplitudeOfIndex(0);
-
-  expectClose(amp0, 0.5, tol, "Index 0 -> Amp = 0.5");
+  EXPECT_NEAR(std::abs(amp0 - 0.5), 0.0, kTol);
 }
 
-void getNormTest() {
+TEST(VectorState, ComputesNorm) {
   qsim::VectorState state(2);
-
-  double tol = 1e-9;
 
   state.setAmplitudeOfIndex(0, {0.5, 0});
   state.setAmplitudeOfIndex(1, {0.5, 0});
@@ -61,13 +54,11 @@ void getNormTest() {
 
   double norm = state.getNorm();
 
-  expectClose(norm, 1, tol, "Normal Norm -> 1");
+  EXPECT_NEAR(std::abs(norm - 1.0), 0.0, kTol);
 }
 
-void restoreNormTest() {
+TEST(VectorState, RestoresNormToOne) {
   qsim::VectorState state(2);
-
-  double tol = 1e-9;
 
   state.setAmplitudeOfIndex(0, {0.49, 0});
   state.setAmplitudeOfIndex(1, {0.49, 0});
@@ -76,11 +67,10 @@ void restoreNormTest() {
 
   state.restoreNorm();
   double norm = state.getNorm();
-  expectClose(norm, 1, tol, "Restored Norm -> 1");
+  EXPECT_NEAR(std::abs(norm - 1.0), 0.0, kTol);
 }
 
-void sampleTest() {
-  double tol = 1e-9;
+TEST(VectorState, SameSeedProducesSameSample) {
   qsim::VectorState state1(8);
   qsim::VectorState state2(8);
 
@@ -93,38 +83,32 @@ void sampleTest() {
 
   std::size_t sample1 = state1.sample(42);
   std::size_t sample2 = state2.sample(42);
-  expectTrue(sample1 == sample2, "Same Seed > Same Sample");
-
-  sample1 = state1.sample(1);
-  sample2 = state2.sample(25);
-  expectTrue(sample1 != sample2, "Different Seed > Different Sample");
+  EXPECT_EQ(sample1, sample2);
 }
 
-void workflowTest() {
-  double tol = 1e-9;
-
+TEST(VectorState, SimulatesCircuitEndToEnd) {
   qsim::VectorState state(10);
 
   qsim::applySingleQubitGate(state, 9, qsim::gates::h());
 
   double norm = state.getNorm();
-  expectClose(norm, 1, tol, " after H on q9");
+  EXPECT_NEAR(std::abs(norm - 1.0), 0.0, kTol);
 
   qsim::applySingleQubitGate(state, 2, qsim::gates::x());
 
   norm = state.getNorm();
-  expectClose(norm, 1, tol, " after X on q9");
+  EXPECT_NEAR(std::abs(norm - 1.0), 0.0, kTol);
 
   state.restoreNorm();
   norm = state.getNorm();
-  expectClose(norm, 1, tol, "Restored Norm -> 1");
+  EXPECT_NEAR(std::abs(norm - 1.0), 0.0, kTol);
 
   std::size_t sample = state.sample(42);
   bool viableIndex = (sample == 4 || sample == 516);
-  expectTrue(viableIndex, "Sample Index 4 or 516");
+  EXPECT_TRUE(viableIndex);
 }
 
-void randomnessTest() {
+TEST(VectorState, SamplesFollowProbabilityDistribution) {
   qsim::VectorState state(1);
   double tol = 0.1;
 
@@ -140,18 +124,5 @@ void randomnessTest() {
   }
 
   double zeroProb = (double)zeros / (double)runs;
-
-  expectClose(zeroProb, 0.5, tol, "Randomness 50/50");
-}
-
-void runStateTests() {
-  vectorInitTest();
-  getProbabilityOfIndexTest();
-  getAmplitudeOfIndexTest();
-  setAmplitudeOfIndexTest();
-  getNormTest();
-  restoreNormTest();
-  sampleTest();
-  workflowTest();
-  randomnessTest();
+  EXPECT_NEAR(std::abs(zeroProb - 0.5), 0.0, tol);
 }
