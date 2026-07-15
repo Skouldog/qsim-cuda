@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.15)
 project(qsim-cuda LANGUAGES CXX)
 
 option(QSIM_USE_CUDA "Build with CUDA backend" OFF)
+option(QSIM_COVERAGE "Enable coverage instrumentation" OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,6 +25,11 @@ if(QSIM_USE_CUDA)
     enable_language(CUDA)
     target_compile_definitions(qsim_core PUBLIC QSIM_USE_CUDA)
     # toDO add CU files
+endif()
+
+if(QSIM_COVERAGE)
+    target_compile_options(qsim_core PUBLIC --coverage -O0 -g)
+    target_link_options(qsim_core PUBLIC --coverage)
 endif()
 
 add_executable(qsim_cli src/main.cpp)
