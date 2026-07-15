@@ -17,4 +17,7 @@ jobs:
             - run: cmake --build build
             - run: ctest --test-dir build
             - run: gcovr --root . --filter src/ --filter include/ --cobertura coverage.xml build
+            - uses: codecov/codecov-action@v5
+              with:
+                token: ${{ secrets.CODECOV_TOKEN }}
 
