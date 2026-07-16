@@ -18,7 +18,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-add_library(qsim_core src/state.cpp src/gates.cpp)
+add_library(qsim_core src/state.cpp src/gates.cpp src/circuit.cpp src/operation.cpp)
 target_include_directories(qsim_core PUBLIC include)
 
 if(QSIM_USE_CUDA)
@@ -38,6 +38,7 @@ target_link_libraries(qsim_cli PRIVATE qsim_core)
 
 
 add_executable(qsim_tests  
+tests/circuit_test.cpp
 tests/gates_test.cpp 
 tests/state_test.cpp
 tests/test_util.cpp
