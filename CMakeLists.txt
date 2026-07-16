@@ -40,6 +40,7 @@ target_link_libraries(qsim_cli PRIVATE qsim_core)
 add_executable(qsim_tests  
 tests/gates_test.cpp 
 tests/state_test.cpp
+tests/test_util.cpp
 )
 target_link_libraries(qsim_tests PRIVATE qsim_core GTest::gtest_main)
 

@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 #include "qsim/gates.hpp"
-#include "test_constants.hpp"
+#include "test_util.hpp"
 
 TEST(VectorState, ConstructsWithCorrectDimensions) {
   qsim::VectorState state(5);
