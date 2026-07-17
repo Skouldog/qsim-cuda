@@ -1,4 +1,5 @@
 """Simulates Bell-State and shows state of Statevector,by using Qiskit."""
+
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
@@ -13,7 +14,7 @@ qc.h(0)
 qc.cx(0, 1)
 
 
-#returns calculated Vector 
+# returns calculated Vector
 sv = Statevector(qc)
 
 

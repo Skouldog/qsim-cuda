@@ -1,0 +1,42 @@
+{
+    "circuits": [
+        {
+            "name": "simple",
+            "num_qubits": 3,
+            "gates": [
+                {
+                    "gate": "x",
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "cx",
+                    "qubits": [
+                        0,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "simple",
+            "num_qubits": 5,
+            "gates": [
+                {
+                    "gate": "h",
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "cx",
+                    "qubits": [
+                        2,
+                        4
+                    ]
+                }
+            ]
+        }
+    ]
+}
