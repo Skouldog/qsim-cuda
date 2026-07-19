@@ -1,7 +1,7 @@
 {
     "circuits": [
         {
-            "name": "simple",
+            "name": "x_then_cx",
             "num_qubits": 3,
             "gates": [
                 {
@@ -20,7 +20,7 @@
             ]
         },
         {
-            "name": "simple",
+            "name": "h_then_cx",
             "num_qubits": 5,
             "gates": [
                 {
@@ -34,6 +34,115 @@
                     "qubits": [
                         2,
                         4
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "x_then_z",
+            "num_qubits": 2,
+            "gates": [
+                {
+                    "gate": "x",
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "z",
+                    "qubits": [
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "h_then_z",
+            "num_qubits": 2,
+            "gates": [
+                {
+                    "gate": "h",
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "z",
+                    "qubits": [
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "h_then_s",
+            "num_qubits": 2,
+            "gates": [
+                {
+                    "gate": "h",
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "s",
+                    "qubits": [
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "h_then_t",
+            "num_qubits": 2,
+            "gates": [
+                {
+                    "gate": "h",
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "t",
+                    "qubits": [
+                        0
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mixed_phase_and_entanglement",
+            "num_qubits": 3,
+            "gates": [
+                {
+                    "gate": "h",
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "t",
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "cx",
+                    "qubits": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "gate": "x",
+                    "qubits": [
+                        2
+                    ]
+                },
+                {
+                    "gate": "z",
+                    "qubits": [
+                        2
                     ]
                 }
             ]
