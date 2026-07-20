@@ -57,7 +57,6 @@ TEST(Reference, MatchesQiskitReference) {
 
   json jfile = getJson();
 
-  
   for (const auto& circuit : jfile["circuits"]) {
     qsim::VectorState state(circuit["num_qubits"]);
     qsim::Circuit cppCircuit;
@@ -66,6 +65,8 @@ TEST(Reference, MatchesQiskitReference) {
       std::string gateType = gate["gate"];
       if (gateType == "cx") {
         cppCircuit.addCnot(gate["qubits"][0], gate["qubits"][1]);
+      } else if (gateType == "rz") {
+        cppCircuit.add(qsim::gates::rz(gate["params"][0]), gate["qubits"][0]);
       } else {
         cppCircuit.add(gateMap.at(gateType), gate["qubits"][0]);
       }
