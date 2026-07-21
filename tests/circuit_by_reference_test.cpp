@@ -41,40 +41,46 @@ std::vector<std::complex<double>> getExpectedVector(const json& circuit) {
 
   return expectedAmps;
 }
+const std::unordered_map<std::string, qsim::Matrix2> gateMap = {
+    {"x", qsim::gates::x()},
+    {"h", qsim::gates::h()},
+    {"z", qsim::gates::z()},
+    {"t", qsim::gates::t()},
+    {"s", qsim::gates::s()}};
+
 /**
  * Take A reference Json(Qiskit) and builds Circuit(cpp)
  * then compares if both get the same result.
  */
-TEST(Reference, MatchesQiskitReference) {
-  std::unordered_map<std::string, qsim::Matrix2> gateMap = {
-      {"x", qsim::gates::x()},
-      {"h", qsim::gates::h()},
-      {"z", qsim::gates::z()},
-      {"t", qsim::gates::t()},
-      {"s", qsim::gates::s()}
-      // Matrix2 rz(double angle)  missing
-  };
+class CircuitReferenceParameterizedTestFixture
+    : public ::testing::TestWithParam<json> {};
 
-  json jfile = getJson();
+TEST_P(CircuitReferenceParameterizedTestFixture, MatchesQiskitReference) {
+  const json& circuit = GetParam();
 
-  for (const auto& circuit : jfile["circuits"]) {
-    qsim::VectorState state(circuit["num_qubits"]);
-    qsim::Circuit cppCircuit;
+  qsim::VectorState state(circuit["num_qubits"]);
+  qsim::Circuit cppCircuit;
 
-    for (const auto& gate : circuit["gates"]) {
-      std::string gateType = gate["gate"];
-      if (gateType == "cx") {
-        cppCircuit.addCnot(gate["qubits"][0], gate["qubits"][1]);
-      } else if (gateType == "rz") {
-        cppCircuit.add(qsim::gates::rz(gate["params"][0]), gate["qubits"][0]);
-      } else {
-        cppCircuit.add(gateMap.at(gateType), gate["qubits"][0]);
-      }
+  for (const auto& gate : circuit["gates"]) {
+    std::string gateType = gate["gate"];
+    if (gateType == "cx") {
+      cppCircuit.addCnot(gate["qubits"][0], gate["qubits"][1]);
+    } else if (gateType == "rz") {
+      cppCircuit.add(qsim::gates::rz(gate["params"][0]), gate["qubits"][0]);
+    } else {
+      cppCircuit.add(gateMap.at(gateType), gate["qubits"][0]);
     }
-
-    cppCircuit.run(state);
-    std::vector<std::complex<double>> expectedState =
-        getExpectedVector(circuit);
-    compareStates(state, expectedState, kTol);
   }
+
+  cppCircuit.run(state);
+  std::vector<std::complex<double>> expectedState = getExpectedVector(circuit);
+  compareStates(state, expectedState, kTol);
 }
+
+INSTANTIATE_TEST_SUITE_P(CircuitReferenceTests,
+                         CircuitReferenceParameterizedTestFixture,
+                         ::testing::ValuesIn(getJson()["circuits"]),
+                         [](const testing::TestParamInfo<json>& info) {
+                           std::string name = info.param["name"];
+                           return name;
+                         });
