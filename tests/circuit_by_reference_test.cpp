@@ -49,7 +49,7 @@ const std::unordered_map<std::string, qsim::Matrix2> gateMap = {
     {"s", qsim::gates::s()}};
 
 /**
- * Take A reference Json(Qiskit) and builds Circuit(cpp)
+ * Take a reference Json(Qiskit) and builds Circuit(cpp)
  * then compares if both get the same result.
  */
 class CircuitReferenceParameterizedTestFixture
