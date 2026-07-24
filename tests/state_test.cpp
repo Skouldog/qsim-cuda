@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 #include "qsim/gates.hpp"
-#include "test_constants.hpp"
+#include "test_util.hpp"
 
 TEST(VectorState, ConstructsWithCorrectDimensions) {
   qsim::VectorState state(5);
@@ -115,6 +115,26 @@ TEST(VectorState, SamplesFollowProbabilityDistribution) {
   qsim::applySingleQubitGate(state, 0, qsim::gates::h());
 
   std::size_t runs = 2000;
+  std::size_t zeros = 0;
+
+  for (std::size_t run = 0; run < runs; run++) {
+    if (state.sample() == 0) {
+      zeros++;
+    }
+  }
+
+  double zeroProb = (double)zeros / (double)runs;
+  EXPECT_NEAR(std::abs(zeroProb - 0.5), 0.0, tol);
+}
+
+TEST(VectorState, SamplingConvergesWithinBinomialTolerance) {
+  qsim::VectorState state(2);
+  double tol = 0.0079;
+
+  qsim::applySingleQubitGate(state, 0, qsim::gates::h());
+  qsim::applyCnotGate(state, 0, 1);
+
+  std::size_t runs = 100000;
   std::size_t zeros = 0;
 
   for (std::size_t run = 0; run < runs; run++) {

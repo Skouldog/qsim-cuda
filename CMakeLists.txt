@@ -7,6 +7,7 @@ project(qsim-cuda LANGUAGES CXX)
 option(QSIM_USE_CUDA "Build with CUDA backend" OFF)
 option(QSIM_COVERAGE "Enable coverage instrumentation" OFF)
 
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -16,9 +17,14 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/52eb8108c5bdec04579160ae17225d66034bd723.zip
 )
-FetchContent_MakeAvailable(googletest)
 
-add_library(qsim_core src/state.cpp src/gates.cpp)
+FetchContent_Declare(
+  json
+  URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+)
+FetchContent_MakeAvailable(googletest json)
+
+add_library(qsim_core src/state.cpp src/gates.cpp src/circuit.cpp src/operation.cpp)
 target_include_directories(qsim_core PUBLIC include)
 
 if(QSIM_USE_CUDA)
@@ -38,10 +44,16 @@ target_link_libraries(qsim_cli PRIVATE qsim_core)
 
 
 add_executable(qsim_tests  
+tests/circuit_test.cpp
 tests/gates_test.cpp 
 tests/state_test.cpp
+tests/test_util.cpp
+tests/circuit_by_reference_test.cpp
 )
-target_link_libraries(qsim_tests PRIVATE qsim_core GTest::gtest_main)
+
+target_compile_definitions(qsim_tests PRIVATE TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/scripts/")
+
+target_link_libraries(qsim_tests PRIVATE qsim_core GTest::gtest_main nlohmann_json::nlohmann_json)
 
 add_executable(qsim_bench benchmarks/main.cpp)
 target_link_libraries(qsim_bench PRIVATE qsim_core)
