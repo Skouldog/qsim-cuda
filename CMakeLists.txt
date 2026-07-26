@@ -22,10 +22,18 @@ FetchContent_Declare(
   json
   URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
 )
-FetchContent_MakeAvailable(googletest json)
+FetchContent_Declare(
+  googlebenchmark
+      URL https://github.com/google/benchmark/archive/refs/tags/v1.9.2.zip )
+set(BENCHMARK_ENABLE_TESTING OFF)
+set(BENCHMARK_ENABLE_INSTALL OFF)
+set(BENCHMARK_ENABLE_WERROR OFF)
+
+FetchContent_MakeAvailable(googletest json googlebenchmark)
 
 add_library(qsim_core src/state.cpp src/gates.cpp src/circuit.cpp src/operation.cpp)
 target_include_directories(qsim_core PUBLIC include)
+target_compile_options(qsim_core PRIVATE -Wall -Wextra)
 
 if(QSIM_USE_CUDA)
     enable_language(CUDA)
@@ -40,7 +48,7 @@ endif()
 
 add_executable(qsim_cli src/main.cpp)
 target_link_libraries(qsim_cli PRIVATE qsim_core)
-
+target_compile_options(qsim_cli PRIVATE -Wall -Wextra)
 
 
 add_executable(qsim_tests  
@@ -52,11 +60,16 @@ tests/circuit_by_reference_test.cpp
 )
 
 target_compile_definitions(qsim_tests PRIVATE TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/scripts/")
+target_compile_options(qsim_tests PRIVATE -Wall -Wextra)
 
 target_link_libraries(qsim_tests PRIVATE qsim_core GTest::gtest_main nlohmann_json::nlohmann_json)
 
-add_executable(qsim_bench benchmarks/main.cpp)
-target_link_libraries(qsim_bench PRIVATE qsim_core)
+add_executable(qsim_bench 
+benchmarks/state_bench.cpp)
+
+target_compile_options(qsim_bench PRIVATE -Wall -Wextra)
+
+target_link_libraries(qsim_bench PRIVATE qsim_core benchmark::benchmark_main)
 
 
 
