@@ -30,8 +30,6 @@ TEST(HGate, CreatesSuperposition) {
 TEST(HGate, AppliedTwiceIsIdentity) {
   qsim::VectorState state(1);
 
-  const double s = 1.0 / std::sqrt(2.0);
-
   qsim::applySingleQubitGate(state, 0, qsim::gates::h());
   qsim::applySingleQubitGate(state, 0, qsim::gates::h());
 
