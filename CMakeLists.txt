@@ -32,6 +32,16 @@ if(QSIM_BENCHMARK)
   set(BENCHMARK_ENABLE_INSTALL OFF)
   set(BENCHMARK_ENABLE_WERROR OFF)
   FetchContent_MakeAvailable(googlebenchmark)
+  
+  add_custom_target(bench
+    COMMAND $<TARGET_FILE:qsim_bench>
+            --benchmark_repetitions=5
+            --benchmark_report_aggregates_only=true
+            --benchmark_out_format=json
+            --benchmark_out=${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/results/latest.json
+    COMMENT "Running benchmarks -> benchmarks/results/latest.json"
+    VERBATIM)
+  add_dependencies(bench qsim_bench)
 endif()
 
 

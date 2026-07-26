@@ -20,3 +20,5 @@ coverage.*
 
 Skript.md
 notes.md
+
+benchmarks/results/latest.json
