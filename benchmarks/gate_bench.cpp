@@ -58,7 +58,7 @@ BENCHMARK(BM_applyCnotGate)->DenseRange(2, 10)->ArgName("qubits")->Complexity();
 
 static void BM_getPairIndices(benchmark::State& state) {
   const int qubit = static_cast<int>(state.range(0));
-  const size_t pairs = (size_t{1} << state.range(1));
+  const size_t pairs = (size_t{1} << (state.range(1) - 1));
   for (auto _ : state) {
     for (size_t pair = 0; pair < pairs; pair++) {
       benchmark::DoNotOptimize(qsim::detail::getPairIndices(pair, qubit));
@@ -69,4 +69,4 @@ static void BM_getPairIndices(benchmark::State& state) {
 }
 BENCHMARK(BM_getPairIndices)
     ->ArgsProduct({{0, 12, 24}, {4, 8, 12, 16, 20, 24}})
-    ->ArgNames({"qubit", "pair of qubit"});
+    ->ArgNames({"target", "qubits"});
