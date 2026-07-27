@@ -6,7 +6,7 @@
 
 static void BM_ghzState(benchmark::State& state) {
   const int qubits = static_cast<int>(state.range(0));
-  
+
   qsim::VectorState qState(qubits);
   qsim::Circuit ghzCircuit;
   ghzCircuit.add(qsim::gates::h(), 0);
@@ -16,9 +16,10 @@ static void BM_ghzState(benchmark::State& state) {
   for (auto _ : state) {
     ghzCircuit.run(qState);
   }
-  const size_t nAmps = size_t{1}<< qubits;
+  const size_t nAmps = size_t{1} << qubits;
   state.SetBytesProcessed(state.iterations() * 16 * nAmps * (qubits + 1));
   state.SetComplexityN(qubits * nAmps);
-  state.SetItemsProcessed(state.iterations() * qubits);
+  state.SetItemsProcessed(state.iterations() *
+                          (nAmps + (qubits - 1) * nAmps / 2));
 }
 BENCHMARK(BM_ghzState)->DenseRange(2, 15)->ArgName("qubits")->Complexity();
