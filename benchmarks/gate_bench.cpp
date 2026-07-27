@@ -19,6 +19,31 @@ BENCHMARK(BM_applySingleQubitGate)
     ->ArgName("qubits")
     ->Complexity();
 
+static void BM_applySingleQubitGateTargetSweep(benchmark::State& state) {
+  const int64_t amplitudes = int64_t{1} << state.range(0);
+  const int target = static_cast<int>(state.range(1));
+  qsim::VectorState qState(state.range(0));
+  const auto gate = qsim::gates::h();
+  for (auto _ : state) {
+    qsim::applySingleQubitGate(qState, target, gate);
+  }
+  state.SetBytesProcessed(state.iterations() * 2 * amplitudes * 16);
+  state.SetItemsProcessed(state.iterations() * amplitudes);
+}
+
+static constexpr int kQubitCounts[] = {6, 12, 24};
+
+static void TargetSweepArgs(benchmark::internal::Benchmark* b) {
+  for (int qubits : kQubitCounts) {
+    for (int target = 0; target < qubits; target += 5) {
+      b->Args({qubits, target});
+    }
+  }
+}
+BENCHMARK(BM_applySingleQubitGateTargetSweep)
+    ->Apply(TargetSweepArgs)
+    ->ArgNames({"qubits", "target"});
+
 static void BM_applyCnotGate(benchmark::State& state) {
   const int64_t pairs = (int64_t{1} << state.range(0)) / 2;
   qsim::VectorState qState(state.range(0));
@@ -44,4 +69,4 @@ static void BM_getPairIndices(benchmark::State& state) {
 }
 BENCHMARK(BM_getPairIndices)
     ->ArgsProduct({{0, 12, 24}, {4, 8, 12, 16, 20, 24}})
-    ->ArgNames({"qubit", "pair  of qubit"});
+    ->ArgNames({"qubit", "pair of qubit"});
