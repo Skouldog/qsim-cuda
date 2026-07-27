@@ -14,8 +14,11 @@ Without --save, plots land in a scratch directory and are overwritten every
 run.  With --save LABEL the run is kept: a dated folder is created holding
 the JSON and every plot generated from it.
 """
+
+
 # ./.venv/bin/python scripts/plot_benchmarks.py
 # ./.venv/bin/python scripts/plot_benchmarks.py --save LABEL
+
 import argparse
 import json
 import math
@@ -39,6 +42,21 @@ AXIS_LABELS = {
     "bytes_per_second": ("GB/s", 1e9),
     "items_per_second": ("G items/s", 1e9),
 }
+
+# SetItemsProcessed() counts whatever the benchmark decided an "item" is, and
+# that differs between families.  Name it per family so the plots say what the
+# rate is a rate *of*; anything not listed falls back to DEFAULT_ITEM_LABEL.
+DEFAULT_ITEM_LABEL = "G amplitudes/s"
+ITEM_LABELS = {
+    "BM_getPairIndices": "G index pairs/s",
+}
+
+
+def label_for(family, col):
+    """Column heading for one metric of one family."""
+    if col == "items_per_second":
+        return ITEM_LABELS.get(family, DEFAULT_ITEM_LABEL)
+    return AXIS_LABELS[col][0]
 
 
 # --------------------------------------------------------------------------
@@ -193,7 +211,9 @@ def print_list(context, families):
 
 def print_table(family, fam):
     cols = available_metrics(fam)
-    headers = list(fam["arg_names"]) + [AXIS_LABELS[c][0] for c in cols] + ["cv%"]
+    headers = (
+        list(fam["arg_names"]) + [label_for(family, c) for c in cols] + ["cv%"]
+    )
 
     rows = []
     for point in fam["points"]:
@@ -263,7 +283,7 @@ def plot_family(family, fam, context, outdir, show, caches):
     )
 
     for ax, col in zip(axes[0], cols):
-        label, scale = AXIS_LABELS[col]
+        label, scale = label_for(family, col), AXIS_LABELS[col][1]
         for name, points in groups:
             xs, ys, errs = [], [], []
             for point in points:
