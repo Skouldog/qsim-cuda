@@ -18,7 +18,10 @@ build/
 build-cov
 coverage.*
 
+#Study Material and Notes
 Skript.md
 notes.md
 
+# Benchmarks (irrelevant ones)
 benchmarks/results/latest.json
+benchmarks/results/latest/
