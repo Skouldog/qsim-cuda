@@ -4,20 +4,44 @@
     ./.venv/bin/python scripts/plot_benchmarks.py --table --no-plot
     ./.venv/bin/python scripts/plot_benchmarks.py
     ./.venv/bin/python scripts/plot_benchmarks.py BM_ghzState --show
+    ./.venv/bin/python scripts/plot_benchmarks.py --overlay --caches
     ./.venv/bin/python scripts/plot_benchmarks.py --save cpu-baseline
 
 Reads the JSON written by `cmake --build ... -t bench` and turns every
 benchmark family into a table and a plot, whatever arguments it was
 registered with.
 
+--overlay additionally draws every family that is measured against qubit
+count onto one set of axes, so a ceiling family (see --reference) can be
+read against the curves it bounds.
+
 Without --save, plots land in a scratch directory and are overwritten every
 run.  With --save LABEL the run is kept: a dated folder is created holding
 the JSON and every plot generated from it.
 """
 
-
-# ./.venv/bin/python scripts/plot_benchmarks.py
-# ./.venv/bin/python scripts/plot_benchmarks.py --save LABEL
+# --------------------------------------------------------------------------
+# The whole workflow, in order.  Run everything from the project root.
+#
+# 1. measure -> benchmarks/results/latest.json   (takes a few minutes)
+#    Needs a Release configure with QSIM_BENCHMARK=ON, otherwise the
+#    `bench` target does not exist at all.
+#    cmake --build build --target bench
+#
+# 2. what is in the run
+#    ./.venv/bin/python scripts/plot_benchmarks.py --list
+#
+# 3. the raw numbers
+#    ./.venv/bin/python scripts/plot_benchmarks.py --table --no-plot
+#
+# 4. plots, including the roofline comparison
+#    ./.venv/bin/python scripts/plot_benchmarks.py --overlay --caches
+#
+# 5. same, but keep this run under a label
+#    ./.venv/bin/python scripts/plot_benchmarks.py --overlay --caches --save cpu-baseline
+#
+# Add --show to any of them to open a window instead of only writing files.
+# --------------------------------------------------------------------------
 
 import argparse
 import json
@@ -33,6 +57,15 @@ DEFAULT_RESULTS = "benchmarks/results/latest.json"
 DEFAULT_OUTDIR = "benchmarks/results/latest"
 DEFAULT_SAVEDIR = "benchmarks/results"
 BYTES_PER_AMPLITUDE = 16  # std::complex<double>
+
+# The family that measures the memory ceiling.  Curves in the overlay are
+# expressed as a percentage of it when it is present.
+DEFAULT_REFERENCE = "BM_roofline"
+
+# Comparing families on shared axes only means something when their x axis
+# means the same thing; every family in the overlay must end in this argument.
+OVERLAY_X = "qubits"
+OVERLAY_METRIC = "bytes_per_second"
 
 # Per-run aggregates google/benchmark emits when --benchmark_repetitions > 1.
 STAT_ROWS = ("mean", "median", "stddev", "cv")
@@ -256,6 +289,25 @@ def cache_edges(context):
     ]
 
 
+def draw_cache_lines(ax, context):
+    """Mark where the statevector outgrows each cache level.
+
+    Only meaningful on axes whose x is a qubit count *and* whose family
+    actually allocates a statevector -- BM_getPairIndices does neither.
+    """
+    for level, edge in cache_edges(context):
+        ax.axvline(edge, color="grey", linestyle="--", alpha=0.5)
+        ax.text(
+            edge,
+            ax.get_ylim()[1],
+            level,
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="grey",
+        )
+
+
 def series(fam):
     """One argument -> a single series. More -> last arg is x, the rest label."""
     names = fam["arg_names"]
@@ -308,17 +360,7 @@ def plot_family(family, fam, context, outdir, show, caches):
         if any(name for name, _ in groups):
             ax.legend(fontsize=8)
         if caches and x_name == "qubits":
-            for level, edge in cache_edges(context):
-                ax.axvline(edge, color="grey", linestyle="--", alpha=0.5)
-                ax.text(
-                    edge,
-                    ax.get_ylim()[1],
-                    level,
-                    ha="center",
-                    va="bottom",
-                    fontsize=8,
-                    color="grey",
-                )
+            draw_cache_lines(ax, context)
 
     title = family
     fit = format_fit(fam)
@@ -328,6 +370,124 @@ def plot_family(family, fam, context, outdir, show, caches):
     fig.tight_layout()
 
     path = os.path.join(outdir, "%s.png" % family)
+    fig.savefig(path, dpi=150)
+    if show:
+        plt.show()
+    plt.close(fig)
+    return path
+
+
+# --------------------------------------------------------------------------
+# overlay: several families on one set of axes
+# --------------------------------------------------------------------------
+
+
+def overlay_curves(families):
+    """[(label, xs, ys)] in GB/s for every family measured against qubits.
+
+    Families whose last argument is not a qubit count are skipped: putting
+    them on shared axes would silently compare two different x meanings.
+    Families that never called SetBytesProcessed() drop out too, because
+    they produce no points.
+    """
+    scale = AXIS_LABELS[OVERLAY_METRIC][1]
+    curves = []
+    for family, fam in families.items():
+        if not fam["arg_names"] or fam["arg_names"][-1] != OVERLAY_X:
+            continue
+        for name, points in series(fam):
+            xs, ys = [], []
+            for point in points:
+                value = metric(point, "mean", OVERLAY_METRIC)
+                if value is None:
+                    continue
+                xs.append(list(point["args"].values())[-1])
+                ys.append(value / scale)
+            if xs:
+                label = family if not name else "%s  %s" % (family, name)
+                curves.append((label, xs, ys))
+    return curves
+
+
+def plot_overlay(families, context, outdir, show, caches, reference):
+    """Throughput of every qubit-indexed family on one axes.
+
+    When the reference family is present a second panel expresses each curve
+    as a percentage of it -- that ratio, not the absolute GB/s, is what says
+    how much of the machine a kernel is actually using.
+
+    Read the percentage panel only where the curves have flattened out: at
+    very small qubit counts the reference loop is dominated by its own loop
+    overhead rather than by memory, so it is not a real ceiling there.
+    """
+    curves = overlay_curves(families)
+    if not curves:
+        return None
+
+    ceiling = None
+    for label, xs, ys in curves:
+        if label == reference:
+            ceiling = dict(zip(xs, ys))
+            break
+
+    panels = 2 if ceiling else 1
+    fig, axes = plt.subplots(1, panels, figsize=(5.5 * panels, 4.2), squeeze=False)
+
+    ax = axes[0][0]
+    for label, xs, ys in curves:
+        is_reference = label == reference
+        ax.plot(
+            xs,
+            ys,
+            marker="o",
+            markersize=4,
+            linewidth=2.0 if is_reference else 1.5,
+            linestyle="--" if is_reference else "-",
+            color="black" if is_reference else None,
+            label=label,
+        )
+    ax.set_xlabel(OVERLAY_X)
+    ax.set_ylabel(AXIS_LABELS[OVERLAY_METRIC][0])
+    ax.set_title("throughput")
+    ax.set_ylim(bottom=0)
+    ax.grid(True, which="both", alpha=0.3)
+    ax.legend(fontsize=8)
+    if caches:
+        draw_cache_lines(ax, context)
+
+    if ceiling:
+        ax = axes[0][1]
+        for label, xs, ys in curves:
+            if label == reference:
+                continue
+            shared = [(x, y) for x, y in zip(xs, ys) if ceiling.get(x)]
+            if not shared:
+                continue
+            ax.plot(
+                [x for x, _ in shared],
+                [100.0 * y / ceiling[x] for x, y in shared],
+                marker="o",
+                markersize=4,
+                label=label,
+            )
+        ax.axhline(100.0, color="black", linestyle="--", linewidth=2.0)
+        ax.set_xlabel(OVERLAY_X)
+        ax.set_ylabel("%% of %s" % reference)
+        ax.set_title("fraction of the ceiling")
+        ax.set_ylim(bottom=0)
+        ax.grid(True, which="both", alpha=0.3)
+        ax.legend(fontsize=8)
+        if caches:
+            draw_cache_lines(ax, context)
+    else:
+        print(
+            "overlay: no %s family in this run, plotting absolutes only" % reference
+        )
+
+    fig.suptitle("family comparison   (%s)" % context.get("host_name", ""))
+    fig.tight_layout()
+
+    path = os.path.join(outdir, "overlay.png")
     fig.savefig(path, dpi=150)
     if show:
         plt.show()
@@ -350,6 +510,16 @@ def main():
     parser.add_argument("--no-plot", action="store_true")
     parser.add_argument("--show", action="store_true", help="open a window")
     parser.add_argument("--caches", action="store_true", help="mark cache boundaries")
+    parser.add_argument(
+        "--overlay",
+        action="store_true",
+        help="also draw all qubit-indexed families on shared axes",
+    )
+    parser.add_argument(
+        "--reference",
+        default=DEFAULT_REFERENCE,
+        help="family treated as the ceiling in the overlay",
+    )
     opts = parser.parse_args()
 
     context, families = load(opts.results)
@@ -382,6 +552,12 @@ def main():
     if not opts.no_plot:
         for family, fam in families.items():
             path = plot_family(family, fam, context, outdir, opts.show, opts.caches)
+            if path:
+                print("wrote %s" % path)
+        if opts.overlay:
+            path = plot_overlay(
+                families, context, outdir, opts.show, opts.caches, opts.reference
+            )
             if path:
                 print("wrote %s" % path)
 
