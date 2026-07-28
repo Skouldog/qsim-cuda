@@ -15,7 +15,7 @@ static void BM_applySingleQubitGate(benchmark::State& state) {
   state.SetItemsProcessed(state.iterations() * amplitudes);
 }
 BENCHMARK(BM_applySingleQubitGate)
-    ->DenseRange(1, 15)
+    ->DenseRange(1, 24)
     ->ArgName("qubits")
     ->Complexity();
 
@@ -54,7 +54,7 @@ static void BM_applyCnotGate(benchmark::State& state) {
   state.SetComplexityN(pairs);
   state.SetItemsProcessed(state.iterations() * pairs);
 }
-BENCHMARK(BM_applyCnotGate)->DenseRange(2, 10)->ArgName("qubits")->Complexity();
+BENCHMARK(BM_applyCnotGate)->DenseRange(2, 24)->ArgName("qubits")->Complexity();
 
 static void BM_getPairIndices(benchmark::State& state) {
   const int qubit = static_cast<int>(state.range(0));
