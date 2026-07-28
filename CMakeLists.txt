@@ -81,7 +81,7 @@ target_compile_options(qsim_tests PRIVATE -Wall -Wextra)
 target_link_libraries(qsim_tests PRIVATE qsim_core GTest::gtest_main nlohmann_json::nlohmann_json)
 
 if(QSIM_BENCHMARK)
-  add_executable(qsim_bench benchmarks/gate_bench.cpp benchmarks/circuit_bench.cpp)
+  add_executable(qsim_bench benchmarks/gate_bench.cpp benchmarks/circuit_bench.cpp benchmarks/roofline_bench.cpp)
   target_compile_options(qsim_bench PRIVATE -Wall -Wextra)
   target_link_libraries(qsim_bench PRIVATE qsim_core benchmark::benchmark_main)
 endif()
