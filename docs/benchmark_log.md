@@ -113,7 +113,7 @@ There are 6 families, all exclude State and Circuit Constructions, shifting the 
 
 #### Sinlge Qubit Gate
 
-![Single Qubit Gate](/benchmarks/results/2026-07-28-cpu-baseline-naive/BM_applySingleQubitGate.png "CPU Naive Singe Qubit Gate Benchmarks")
+![Single Qubit Gate](/benchmarks/results/2026-07-28-cpu-baseline-naive/BM_applySingleQubitGate.png "CPU Naive Single Qubit Gate Benchmarks")
 
 Observation
 Through out L1 to L3 the throughput seems stable, this suggest that the function is not memory bound rather computation bound. It is up to 8 times slower than our roofline function.
@@ -123,3 +123,70 @@ Interestingly enough there is a steep drop at the 20 Qubit mark, this is the rel
 THis would be a good first look for any optimization. We can tell from the roofline that our memory bound ist at roughly 38 GB/s and our computational for the SingleQubitGate lies at roughly 22 GB/s. 
 Why is the current throughput 16 GB/s instead of 22GB/s because  the slower dram latency introduces cpu stalls. The Cpu works through the instructions faster than dram can supply new values
 
+#### CNOT QUbit Gate
+
+![CNOT Qubit Gate](/benchmarks/results/2026-07-28-cpu-baseline-naive/BM_applyCnotGate.png "CPU Naive CNOT Qubit Gate Benchmarks")
+
+
+Observation: First again see a computational bound for the L1 and L2 Cache, here the performance degradation happens earlier as the thorughput already starts to decrease in transtiton to L3 Cache and onwards. 
+
+One strange observation is the higher thorughput of the CNOT Gate compared to our singleQubitGate. The seemingly more complex Cnot gate costs apparently less then our singlequbit gate. making it up to 3x faster. 
+
+Explantion: 
+the drop probably stems from the same cause as in our single qubit gate. The high latencys cant be hidden by our CPU anymore. Since our operational speed is alot higher than with the single qubit gate, this happens one memory stage earlier and is visible even with the L3 Cache.
+
+Looking closer at our functins the speed difference is quite obvious. Cnot having the branching logik, eleminating alot of operations and the follow through being just a simple amlpitude swap without any computations compared to the heavy matrix artihtmeics in our singleQubitGate. This might be worth looking at after the GPU optimization, since with the single Qubit we will be able to compute parralel whereas for our branching we will mask. So my intution would suggest that in the gpu version the single qubit will surpase our cnot gate in performance.
+
+#### GHZ State
+
+![GHZ State](/benchmarks/results/2026-07-28-cpu-baseline-naive/BM_ghzState.png "CPU Naive GHZ State Benchmarks")
+
+Observation: Until we Qubit 13 we have a ramp up in performance which plateus and then starts to drop at Qubit 16 and then stabilizes at Qubit 21 again. 
+Although GHZ State consists basically of N-1 Cnot gates, asymptotic we could say it consist of just Cnot Gates the performance doesnt match the CNOT Gate output. Being more than 10 % slower. 
+
+
+Hypothesis: 
+The general is uninteresting and very likely the overhead from our circuit object. It runs each gate as an Operation in a list, this incurs overhead which we didnt have when we benchmarked the raw function. 
+Although over 10% seems like a high number and might be worth looking into. 
+
+The more interesting unexpected effect is the ramp up of the performance. My first instinct is that the H Gate Operation has slower speed and pushes the ouput per second down, this explains the logarithmic shape of the ramp up well. The initial overhead also takes a big toll on our performance making the lower qubits increase in speed the more gates get chained.
+
+
+
+### Results: Unique
+
+There has been two benchmarks which i will introduce now but will not elaborate more in future benchmakrs for the sake of redundancy
+
+#### GetPairIndices
+
+![Get Pair Inidices](/benchmarks/results/2026-07-28-cpu-baseline-naive/BM_getPairIndices.png "CPU Naive Get Pair indices Benchmarks")
+
+The function is as expected stable and very likely to be computational bound. 
+We operate directly thorugh bit modifacations and without branches. Thanks to the bit operations we dont see a performance degradationn for pairs which are far apart ( eg. 1 and 2^n -1 ).
+
+
+#### Apply Singe Qubit Gate Target Sweep
+
+![Apply Singe Qubit Gate Target Sweep](/benchmarks/results/2026-07-28-cpu-baseline-naive/BM_applySingleQubitGateTargetSweep.png "CPU Naive Apply Singe Qubit Gate Target Sweep Benchmarks")
+
+Explanation: This Benchmark build various State of different Size and then checked wether different target Bits would influence operation speeds. 
+
+Origianl Hypothesis: Yes there will be an influence, since the Amplitudes wont lie next to each other im memory, the higher the target bit -> the furter apart in memory -> the slower the function gets.
+
+THe original hypothesis is twisted. The further apart in memory the amplitudes are the faster the function goes. We can see that for a 24 qubit state we get only 16GB/s for target 0, just like we did in our applySinge Qubit benchmark. But interestingly enough this degradation completly vanishes after we increase the target bit to 10 and higher. Here we are able to reach the computation bounds liek we did with the l1 to l3 caches. 
+
+possible Explanation: The porcessor prefecthes amps to queue up to be proccessed. if the pairs are next to each other the processor will prefetch the whole page from those pairs resulting in a 4KB prefetch. If we have two far apart pairs the proccesor will acces the two parallel prefecthicn their respective pages. prefecthing 8 KB in total, essentially hiding the dram latency again. 
+
+
+### Conclusion Inital Benchmakr
+
+The most extreme perfomance gain would be achieved by enabling more cores. We are no where near our maximal memory bandwidht and should be able to atleast double our perfomance here. 
+
+Afterwards it would be worth to see if we can remove arithmetic throttle necks. since we tend to be computational bound rather than memory bound. 
+at last i would look closer into the our prefecthing and misses to try and hide dram latencies. 
+
+
+
+### Reproduction of this Benchmark 
+
+to do and look at dram latency again. 
