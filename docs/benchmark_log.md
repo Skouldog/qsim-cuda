@@ -137,9 +137,18 @@ More important the L3 Cache is shared amongst all 4 performance Cores, meaning t
 
 ### Results
 
-#### Headline Numbers? 
+#### Headline Numbers
 
 Note: This benchmark is single core and we use complex<double>
+
+
+|family| in-cache plateu(11 qubtits) |  DRAM(24 qubits)|
+|---   |---              |---              |    
+|roofline|   	159.49 GB/s  , 0.20 ns/iter ,   0.94 cycles/iter                |   36.86 GB/s , 0.868 ns/iter, 4.08 cycles/iter |
+|single qubit H| 22.03 GB/s  , 2.90 ns/iter ,   13.66 cycles/iter       | 16.57 GB/s , 3.86 ns/itr, 18.16 cycles/iter|
+|CNOT|    	57.88 GB/s  , 0.55 ns/iter ,   2.60 cycles/iter | 	17.34 GB/s , 1.846 ns/itr, 8.68 cycles/iter|
+|GHZ | peak 46.15 GB/s at 16 qubits | 22.53 GB/s |
+
 
 
 #### Single Qubit Gate
@@ -195,16 +204,33 @@ Observation: performance ramps up logarithmically to a peak of 46 GB/s at 16 qub
 
 Although GHZ State consists of N-1 Cnot gates, asymptotic we could say it consists of just Cnot Gates the performance does not match the CNOT Gate output. In cache it is 18% slower (46.1 GB/s vs  56.2 GB/s at 16 qubits).
 
+
+
 It is actually faster than our raw CNOT Gate Operation at high Qubits. 22.5 GB/s vs 17.3 GB/s
 
 
 
 Hypothesis: 
 The general performance drop – in the lower qubits – is uninteresting and very likely the overhead from our circuit object. It runs each gate as an Operation in a list, this incurs overhead which we did not have when we benchmarked the raw function. 
-18% seems more like a simple overhead and is worth looking into for further optimization. 
+
+
+Looking at our numbers we can compare the 18 % and evaluate overhead vs the single H Gate slowing us down. 
+
+one GHZ call at 16 Qubits takes 386237.7371ns
+one cnot 18663.4173 ns
+one single  95527.2835 ns
+
+Raw Ghz time = H + Cnot * (n-1)
+Raw Ghz= 375478.543 ns
+
+So we have residuals(Overhead, cache misses) slowing us down by 10759.1941 ns or 3 % 
+This is minimal and clarifies the 18 % percent from earlier. 3 % do not constitute for further improvement, at least not the first iteration. 
+
 
 
 One unexpected effect is the ramp up of the performance. My first instinct is that the H Gate Operation has slower speed and pushes the output per second down, this explains the logarithmic shape of the ramp up well. The initial overhead also takes a big toll on our performance making the lower Qubits increase in speed the more gates get chained.
+
+
 
 By far the most interesting observation, is the fact that our GHZ is faster than our CNOT Function for high qubits. This is extremely unintuitive seeing its more complex and should be slower with all the overheads. This speed up could be related to target bits. With our CNOT Gate we always took the same target and control bit being 0 and 1 respectively. Our GHZ State takes i, i+1 as control and target. Increasing the distance between Indices in a pair. 
 
@@ -251,12 +277,45 @@ Possible Explanation: The processor prefetches amplitudes to queue them to be pr
 #### Cost Model
 
 
+|qubits| BM_Roofline | BM_applyCnotGate | BM_applySingleQubitGate | 
+|---   |---          |---               |---                      |  
+|8(in-cache)     | 1.07 cylce per amp | 2.85 Cycle per pair | 13.84 Cylce per pair| 
+|24(DRAM)    | 4.08 cylce per amp | 8.68 Cycle per pair | 18.16 Cylce per pair| 
+|---   |---          |---               |---                      |  
+|| +3.01 per amp| +5.8 per pair| +4.3 per pair|
+
+
+Roofline: Touching an Amplitude
+CNOT: index calculations, branch and swap. +1.78 Cycle per pair.
+Cnot only touches pairs where the control bit is set 1, half the amps of our state but then reads and writes 2 amps, so the total is 1 amp in average which makes the comparison 1:1 with the roofline
+H Gate: Same index same writing but matrix operation. +10.99 Cylces per pair.
+
+// to DO : revise cycles and h gate moves more than cnot gate
+
+Roofline states the tax for moving from cache to DRam is +3 cycles per amp. Looking at the cnot gate we get 5.8 per pair. Since the CNot touches two amps it roughly matches the expected cost increase. 
+Interestingly the single Qubit only increases by +4.3, the long calculations are able to hide the memory slowdown. The function keeps calculatin while new pairs are slowly moved through memory. This is not a clear compute-bound rather a mix of both. 
+Wherea as the roofline and Cnot Gate are purely memory bound. 
+
+
+
+### Improvements
+
+#### Improving Performance 
 
 The most extreme performance gain would be achieved by enabling more cores. We are nowhere near our maximal memory bandwidth and should be able to at least double our performance here. 
 
 Afterward it would be worth to see if we can remove arithmetic bottlenecks, since we tend to be compute-bound rather than memory-bound. 
 At last, we should look closer into our prefetching and cache misses to hide dram latencies. 
+Our focus should be the single qubit operations, since the matrix calculations seem to slow us done the most. 
 
+
+#### Improving Methodology 
+
+The benchmark for H Gate is currently a bit of a black box, 
+so for future benchmarks its worth adding: 
+SingleQubitGate-Index Only: load both amplitudes, read and write back but without any math. -> this will measure our artithmetics
+
+SingleQubitGate-Sequential Index: use a loop to go through the indices and compute sequentially without getPairIndices function. -> this will measure our GetIndicies Cost in context
 
 
 ### Reproduction of this Benchmark 
@@ -275,7 +334,6 @@ pinned versions.
    `bench` target does not exist at all:
 
         cmake --preset benchmark                        (once, to configure)
-        cmake --build --preset benchmark --target bench
 
 3. Build and run. Writes `benchmarks/results/latest.json`:
 
@@ -285,7 +343,7 @@ pinned versions.
 
        .venv/bin/python scripts/plot_benchmarks.py --overlay --caches --save cpu-baseline-naive
 
-   This creates `benchmarks/results/<date>-<label>/` holding a copy of the JSON
+   This creates `benchmarks/results/<date>-<label>/` holding a copy of the JSON, the numbers.md
    and every plot used in this document. The date comes from the JSON's own
    context block rather than from the clock, so re-plotting an old run still
    files it under the day it was measured.
