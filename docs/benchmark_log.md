@@ -3,6 +3,53 @@
 
 ## Hardware Rooflines
 
+
+### System Specs
+
+- git sha: 16f529f
+- date: 2026-07-28 10:08
+- machine: "tom-Yoga-7-2-in-1-14ILL10",
+- CPU:   Intel(R) Core(TM) Ultra 7 258V, 8 Cores
+    - "mhz_per_cpu": 4700,
+    - "cpu_scaling_enabled": true,
+    - Caches:  (on performance core)
+        - L1d       48K    
+        - (L1i       64K)     
+        - L2       2.5M     
+        - L3        12M     
+- compiler: g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0  
+- build type: Release
+- build flags: -O3 -DNDEBUG
+- benchmark library: google/benchmark v1.9.2
+
+### Methodology
+
+#### Correctnes
+
+Our functions get tested by self written Unit test with the testing harness google/test. To further ensure correctnes we cross check our circuit results with Qiskit Circuit results and flag if there are differences. 
+
+#### Benchmarking 
+
+This is the first naive CPU implementation without further optimization.
+
+There are 5 families, all exclude State and Circuit Constructions, shifting the focus of the heavy calculations and memory transfers.
+
+
+ - Single qubit gate: Runs H Gate on |0...0> State
+ - Cnot qubit gate: Runs Cnot Gate on |0...0> State
+ - GHZ State: Runs H Gate and then n-1 CNOT Gates on |0...0> State
+ - Get Pair Indices: Calculates Pair Indices from Pair Numbers
+ - Single Qubit Gate Target Sweep: Applies H Gate on different target qubits
+
+Each family was run 5 times with a median coefficient of variation of 0.41%, the max CV being 2.56%. 
+
+All families count 32 bytes of traffic for every amplitude a gate updates: 16 bytes read plus 16 bytes written, one complex<double> in each direction. The single-qubit gate updates all 2ⁿ amplitudes and is therefore charged 32·2ⁿ bytes per call. The CNOT only updates the half of the state where the control bit is set, so the same rule gives it 16·2ⁿ. GHZ is charged 16·2ⁿ·(n+1) — one H plus n−1 CNOTs.
+
+The rule is consistent, so GB/s measures useful traffic within a family. But it is not a speed comparison between families: the CNOT is charged half the bytes for doing the same number of loop iterations, so its GB/s understates it by 2×. Cross-family comparisons in this document use time per loop iteration instead.
+
+The exact numbers can be found in the 'numbers.md' of each benchmark.
+
+
 ### Theoretical Limits: [Intel(R) Core(TM) Ultra 7 258V, 8 Cores](https://www.intel.com/content/www/us/en/products/sku/240957/intel-core-ultra-7-processor-258v-12m-cache-up-to-4-80-ghz/specifications.html)
 
 All the CPU Benchmarks are being run on this CPU
@@ -67,9 +114,9 @@ More interestingly our predicted performance drops happen later than anticipated
 
 | Cache Switch (from/to)| Predicted Drop | Actual Drop | 
 | -------- | -------         |------       |
-| L1->L2       | 11.5            |        14     |
-| L2->L3       | 17.3            |        18     |
-| L3->DRAM       | 19.6            |        21     |
+| L1->L2       | 11.5 (12)            |        14     |
+| L2->L3       | 17.3  (18)          |        18     |
+| L3->DRAM       | 19.6 (20)           |        21     |
 
 Possible Explanation: 
 The original hypothesis assumed that as soon the state does not fit in one cache the whole state gets transferred to the next higher level. The data suggest a different approach. 
@@ -86,46 +133,14 @@ More important the L3 Cache is shared amongst all 4 performance Cores, meaning t
 
 
 
-## Initial Benchmark 
-
-### System Specs
-
-- git sha: 16f529f
-- date: 2026-07-28 10:08
-- machine: "tom-Yoga-7-2-in-1-14ILL10",
-- CPU:   Intel(R) Core(TM) Ultra 7 258V, 8 Cores
-    - "mhz_per_cpu": 4700,
-    - "cpu_scaling_enabled": true,
-    - Caches:  (on performance core)
-        - L1d       48K    
-        - (L1i       64K)     
-        - L2       2.5M     
-        - L3        12M     
-- compiler: g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0  
-- build type: Release
-- build flags: -O3 -DNDEBUG
-- benchmark library: google/benchmark v1.9.2
-
-### Methodology
-
-This is the first naive CPU implementation without further optimization.
-
-There are 5 families, all exclude State and Circuit Constructions, shifting the focus of the heavy calculations and memory transfers.
-
-
- - Single qubit gate: Runs H Gate on |0...0> State
- - Cnot qubit gate: Runs Cnot Gate on |0...0> State
- - GHZ State: Runs H Gate and then n-1 CNOT Gates on |0...0> State
- - Get Pair Indices: Calculates Pair Indices from Pair Numbers
- - Single Qubit Gate Target Sweep: Applies H Gate on different target qubits
-
-Each family was run 5 times with a median coefficient of variation of 0.41%, the max CV being 2.56%. 
-
-All families count 32 bytes of traffic for every amplitude a gate updates: 16 bytes read plus 16 bytes written, one complex<double> in each direction. The single-qubit gate updates all 2ⁿ amplitudes and is therefore charged 32·2ⁿ bytes per call. The CNOT only updates the half of the state where the control bit is set, so the same rule gives it 16·2ⁿ. GHZ is charged 16·2ⁿ·(n+1) — one H plus n−1 CNOTs.
-
-The rule is consistent, so GB/s measures useful traffic within a family. But it is not a speed comparison between families: the CNOT is charged half the bytes for doing the same number of loop iterations, so its GB/s understates it by 2×. Cross-family comparisons in this document use time per loop iteration instead.
+## 2026-07-28 - CPU baseline (naive)
 
 ### Results
+
+#### Headline Numbers? 
+
+Note: This benchmark is single core and we use complex<double>
+
 
 #### Single Qubit Gate
 
@@ -159,7 +174,7 @@ At qubit 24 this advanteage collapses to 2.1x.
 
 |qubits       | H ns/pair   | CNOT ns/ pair |  H / CNOT|
 | -------- | -------         |------       |------       |
-|8|2.95| 0.56 | 4.8x|
+|8|2.95| 0.61 | 4.8x|
 |12     | 2.91      | 0.56         | 5.2×     |
 | 16     | 2.92      | 0.57         | 5.1×     |
 | 20     | 3.34      | 0.93         | 3.6×     |
@@ -195,19 +210,28 @@ By far the most interesting observation, is the fact that our GHZ is faster than
 
 
 
-### Results: Unique
+#### Results: Unique
 
 There will be two benchmarks which we will introduce now but will not elaborate more in future benchmarks for the sake of avoiding redundancy.
 
-#### GetPairIndices
+##### GetPairIndices
 
 ![Get Pair Indices](../benchmarks/results/2026-07-28-cpu-baseline-naive/BM_getPairIndices.png "CPU Naive Get Pair indices Benchmarks")
 
 The function is as expected stable and very likely to be compute-bound. 
 We operate directly through bit modifications and without branches. Thanks to the bit operations we do not see a performance degradation for pairs which are far apart (e.g., 1 and 2^n -1).
 
+Importantly, we can not look at the speed. Since the function is seemingly harness bound. 
+Looking at the cycles/iter we can see we hover at roughly 3.70. (The small flucations stem from the google benchmark overhead, timing and loop setups affect the measurement less with more iterations).
+If we know look at our CNOT Gate function – we have for qubit 8 – 2.85 Cylces per Iteration. 
+This is a contradiction since CNOT, calculates Pair Indices, reads the value of the the amplitudes and writes back to them. 
 
-#### Apply Single Qubit Gate Target Sweep
+Since Get Pair Indices is a pure fucntion which reads input, computes and just returns a value. The compiler will evalute the code as dead if we dont use the value. Since we are doing an isolated test, the value never gets used. To combat this we used, the `DoNotOptimize` function, which explicity forces the function to execute. This does not resemble our real work flow since the compiler would be able to optimize and inline the function, calling it while waiting for loads or storing. 
+
+So the important insight is that Get Pair Indices is harness bound at the moment and we can not measure future improvements 
+
+
+##### Apply Single Qubit Gate Target Sweep
 
 ![Apply Single Qubit Gate Target Sweep](../benchmarks/results/2026-07-28-cpu-baseline-naive/BM_applySingleQubitGateTargetSweep.png "CPU Naive Apply Single Qubit Gate Target Sweep Benchmarks")
 
@@ -223,6 +247,10 @@ Possible Explanation: The processor prefetches amplitudes to queue them to be pr
 
 
 ### Conclusion Initial Benchmark
+
+#### Cost Model
+
+
 
 The most extreme performance gain would be achieved by enabling more cores. We are nowhere near our maximal memory bandwidth and should be able to at least double our performance here. 
 
