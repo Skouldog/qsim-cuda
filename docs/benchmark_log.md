@@ -7,7 +7,7 @@
 
 ### System Specs
 
-All the CPU Benchmarks are run on laptop with the listed specs. 
+All the CPU benchmarks are run on laptop with the listed specs. 
 
 - machine: "tom-Yoga-7-2-in-1-14ILL10"
 - CPU: Intel(R) Core(TM) Ultra 7 258V, 8 Cores
@@ -33,14 +33,14 @@ We use unit tests with the google/test harness to ensure correctness of single f
 
 #### Benchmarking 
 
-There are 5 benchmarking families, all exclude State and Circuit Constructions – shifting the focus towards arithmetics and memory transfers.
+There are 5 benchmarking families, all exclude state and circuit constructions – shifting the focus towards arithmetics and memory transfers.
 The families are defined as follows:
 
- - Single qubit gate: Runs H Gate on |0…0> State
- - CNOT qubit gate: Runs CNOT Gate on |0…0> State
- - GHZ State: Runs H Gate and then n-1 CNOT Gates on |0…0> State
- - Get Pair Indices: Calculates Pair Indices from Pair Numbers
- - Single Qubit Gate Target Sweep: Applies H Gate on different target qubits.
+ - Single qubit gate: Runs H gate on |0…0> State
+ - CNOT qubit gate: Runs CNOT gate on |0…0> State
+ - GHZ State: Runs H gate and then n-1 CNOT Gates on |0…0> State
+ - Get Pair Indices: Calculates pair indices from pair numbers
+ - Single Qubit Gate Target Sweep: Applies H gate on different target qubits.
 
 
 Each family is run 5 times to get a more deterministic result and reduce the risk of having extreme exceptions give us wrong performance numbers.
@@ -88,7 +88,7 @@ Maximum bandwidth = DRAM bandwidth * bus size / 8 / 1000
 
 Maximum Bandwidth = 8533 MT/s * 128 bit bus width / 8 / 1000 = <b>136.528 GB/s</b>
 
-Looking at our State representation – a vector of complex<double> – each amplitude requires 16 byte, therefore our n-qubit state will grow to size 2^n · 16 bytes. 
+Looking at our state representation – a vector of complex<double> – each amplitude requires 16 byte, therefore our n-qubit state will grow to size 2^n · 16 bytes. 
 
 Knowing this size we can now compute where our vector should be cached in.
 
@@ -101,7 +101,7 @@ L1 = 48KiB = 48 * 1024 = 49152 Bytes
 
  -> n = 11.5 
 
- All states with 11 Qubits and less should fit in our L1 Cache.
+ All states with 11 qubits and less should fit in our L1 cache.
 
  Likewise:
 
@@ -111,7 +111,7 @@ L1 = 48KiB = 48 * 1024 = 49152 Bytes
 
 DRAM(32GiB) n = 31: 
 
-This is a theoretical Number since the OS itself needs DRAM and would not be able to spend all resources to just hold the State.
+This is a theoretical number since the OS itself needs DRAM and would not be able to spend all resources to just hold the State.
 
 ### Practical Limits: 
 
@@ -136,11 +136,11 @@ Our processed data per second is far from the theoretical bandwidth, strangely e
 Explanation: 
 
 Overprocessing (Qubits 2-14):
-The memory bandwidth limit is calculated for DRAM. Since the States are so small they can fit entirely into the L3 cache or lower, the theoretical DRAM limit does not apply.
+The memory bandwidth limit is calculated for DRAM. Since the states are so small they can fit entirely into the L3 cache or lower, the theoretical DRAM limit does not apply.
 
 Observation:
 
-Another noteworthy anomaly is the irregular curve from Qubit sizes 2 till 10. 
+Another noteworthy anomaly is the irregular curve from qubit sizes 2 till 10. 
 
 Explanation:
 
@@ -169,11 +169,11 @@ More interestingly our predicted performance drops happen later than anticipated
 Possible Explanation: 
 
 The original hypothesis assumed that as soon as the state does not fit in one cache the whole state gets transferred to the next higher level. The data suggests a different approach. 
-The state gets partially fitted in a cache Level, which results in only partial cache misses. This creates a somewhat gradual performance decrease until the majority of the state lives in the next cache.
+The state gets partially fitted in a cache level, which results in only partial cache misses. This creates a somewhat gradual performance decrease until the majority of the state lives in the next cache.
 
 Keeping in Mind:
 
-L2 as well as L3 Cache are unified, so the instructions from our Google benchmark loop will also occupy space. 
+L2 as well as L3 cache are unified, so the instructions from our Google benchmark loop will also occupy space. 
 
 More important the L3 Cache is shared amongst all 4 performance cores, meaning the OS and outside applications could occupy space as well, leaving less for the state. 
 
@@ -240,9 +240,9 @@ Our prefetching is not able to provide cache-lines fast enough, causing stalls a
 
 
 Observation:
-1. Again we see a compute-bound for the L1 and L2 Cache, here the performance degradation happens earlier, as the throughput already starts to decrease in transition to L3 Cache and onwards. 
+1. Again we see a compute-bound for the L1 and L2 cache, here the performance degradation happens earlier, as the throughput already starts to decrease in transition to L3 cache and onwards. 
 
-2. One strange observation is the higher throughput of the CNOT Gate compared to our singleQubitGate (roughly 5x faster). The seemingly more complex CNOT gate costs apparently less than our single qubit gate. 
+2. One strange observation is the higher throughput of the CNOT gate compared to our singleQubitGate (roughly 5x faster). The seemingly more complex CNOT gate costs apparently less than our single qubit gate. 
 For a fair comparison we will look at the time it took for one pair to be calculated. <br>
 At qubit 24 this advantage collapses to 2.1x. 
 
@@ -256,11 +256,11 @@ At qubit 24 this advantage collapses to 2.1x.
 | 24     | 3.86      | 1.85         | 2.1×|
 
 Explanation: 
-1. The drop probably stems from the same cause as in our single qubit gate. The high latencies can not be hidden by our CPU anymore. Since our operational speed is a lot higher than with the single qubit gate, this happens one memory stage earlier and is visible even with the L3 Cache. We are not able to prefetch enough lines to hide our latencies. 
+1. The drop probably stems from the same cause as in our single qubit gate. The high latencies can not be hidden by our CPU anymore. Since our operational speed is a lot higher than with the single qubit gate, this happens one memory stage earlier and is visible even with the L3 cache. We are not able to prefetch enough lines to hide our latencies. 
 
 2. Looking closer at our functions the speed difference is quite obvious. Being made up by branching logic, the CNOT gates eliminate a half of the operations. The remaining operations are amplitude swaps without any computations – which are minimal compared to the heavy matrix arithmetics in our singleQubitGate. 
 The drop in the performance advantage 5.1x -> 2.1x is probably caused by the fact that both functions experience heavy stalls and have to wait on the DRAM.
-This performance difference might be worth looking at after the GPU optimization, since with the single Qubit we will be able to compute parallel whereas for our branching we will mask. So my intuition would suggest that in the GPU version the single qubit will surpass our CNOT gate in performance.
+This performance difference might be worth looking at after the GPU optimization, since with the single qubit we will be able to compute parallel whereas for our branching we will mask. So my intuition would suggest that in the GPU version the single qubit will surpass our CNOT gate in performance.
 
 #### GHZ State
 
@@ -268,38 +268,38 @@ This performance difference might be worth looking at after the GPU optimization
 
 Observation: performance ramps up logarithmically to a peak of 46.15 GB/s at 16 qubits, starts to fall from qubits 17 and flattens roughly at 22 GB/s from 22 qubits. 
 
-Although GHZ State consists of N-1 CNOT gates, asymptotically it consists of CNOT Gates however the output does not match CNOT Gate's, in cache it is 18% slower (46.15 GB/s vs. 56.19 GB/s at 16 qubits).
+Although GHZ state consists of N-1 CNOT gates, asymptotically it consists of CNOT gates however the output does not match CNOT gate's, in cache it is 18% slower (46.15 GB/s vs. 56.19 GB/s at 16 qubits).
 
 
 
-And at high qubits it is actually faster than our raw CNOT Gate Operation. 22.53 GB/s vs. 17.34 GB/s
+And at high qubits it is actually faster than our raw CNOT gate Operation. 22.53 GB/s vs. 17.34 GB/s
 
 
 
 Hypothesis: 
 The general performance drop – in the lower qubits – is uninteresting and very likely the overhead from our circuit object. It runs each gate as an Operation in a list, this incurs overhead which we did not have when we benchmarked the raw function. 
 
-Looking at our numbers we can compare the 18 % and evaluate overhead vs. the single H Gate slowing us down. 
+Looking at our numbers we can compare the 18 % and evaluate overhead vs. the single H gate slowing us down. 
 |||
 |---|----|
-| GHZ call at 16 Qubits | 386237.7371ns |
+| GHZ call at 16 qubits | 386237.7371ns |
 |CNOT gate |18663.4173 ns |
 |single H gate |95527.2835 ns |
 |Raw GHZ time |375478.543 ns|
 |Slowdown |10759.1941 ns| 
 
 Raw GHZ time = H + CNOT * (n-1) <br>
-Slow down = GHZ Call - Raw GHZ time
+Slow down = GHZ Call - raw GHZ time
 
 So we have residuals (Overhead, cache misses) slowing us down by 10759.2 ns or 3 %. 
 This is minimal and clarifies the 18 % from earlier. Our 3 % do not constitute for further improvement for now.
 
 Observation: 
 
-By far the most interesting observation, is the fact that our GHZ is faster than our CNOT Function for high qubits. This is extremely unintuitive seeing it's more complex and should be slower with all the overheads. 
+By far the most interesting observation, is the fact that our GHZ is faster than our CNOT function for high qubits. This is extremely unintuitive seeing it is more complex and should be slower with all the overheads. 
 
 Possible Explanation:
-This speed up could be related to target bits. With our CNOT Gate we always took the same target and control-bit being 0 and 1 respectively. Our GHZ State takes i, i+1 as control and target. Increasing the distance between Indices in a pair. 
+This speed up could be related to target bits. With our CNOT gate we always took the same target and control-bit being 0 and 1 respectively. Our GHZ state takes i, i+1 as control and target. Increasing the distance between Indices in a pair. 
 
 
 
@@ -318,11 +318,11 @@ Importantly, we can not look at the speed since the function is seemingly harnes
 Looking at the numbers.md we can see we hover at roughly 3.70 cycles/iter. (The small fluctuations stem from the google benchmark overhead, timing and loop setups – the effect on the measurement becomes less with more iterations).
 If we now compare this data with the CNOT Gate function.
 
-| GetPairIndices| CNOT Gate (8 qubits)|
+| GetPairIndices| CNOT gate (8 qubits)|
 |--|--|
 |3.70 cycles/iter | 2.85 cycles/iter| 
 
-This is a contradiction since CNOT, calculates Pair Indices, reads the value of the amplitudes and writes back to them and should therefore take more cycles than our pure function.
+This is a contradiction since CNOT, calculates pair indices, reads the value of the amplitudes and writes back to them and should therefore take more cycles than our pure function.
 
 Explanation: 
 `Get Pair Indices` is a pure function which reads input, computes and just returns a value, without changing any variables of our code. 
@@ -341,11 +341,11 @@ Original Hypothesis: <br>
 Yes there will be an influence.<br> 
 > High target bit -> amplitudes further apart in memory -> two accesses -> to separate cache lines.<br>
 
-Since the Amplitudes do not lie next to each other in memory, we can not access them with one cache-line, needing two which reduces our speed since we have to wait until both arrive.
+Since the amplitudes do not lie next to each other in memory, we can not access them with one cache-line, needing two which reduces our speed since we have to wait until both arrive.
 
 Observation: <br>
-The original hypothesis is inverted. The further apart in memory the amplitudes are, the faster the function goes. We can see that for a 24 Qubit State with Target Bit 0 we get 16.57 GB/s. After we increase the target bit to 10 and higher this degradation plateaus at 20.7 GB/s vs. the 22.0 in-cache bound — 94%. We are approaching our cache-computation bounds.
-This effect could be already seen in the GHZ State Test. It performed faster than the raw CNOT Test, with the same reason. Our bits become further apart with later CNOT Gates.
+The original hypothesis is inverted. The further apart in memory the amplitudes are, the faster the function goes. We can see that for a 24 qubit state with target bit 0 we get 16.57 GB/s. After we increase the target bit to 10 and higher this degradation plateaus at 20.7 GB/s vs. the 22.0 in-cache bound — 94%. We are approaching our cache-computation bounds.
+This effect could be already seen in the GHZ state test. It performed faster than the raw CNOT test, with the same reason. Our bits become further apart with later CNOT gates.
 
 Possible Explanation:<br>
 The processor prefetches amplitudes to queue them to be processed. If the pairs are next to each other the processor will use one stream to prefetch cache lines. If we have two far apart pairs the processor will use parallel memory access, using two streams for prefetching. Essentially doubling our lines in flight and hiding the dram latency. 
@@ -358,20 +358,20 @@ The processor prefetches amplitudes to queue them to be processed. If the pairs 
 
 |qubits| BM_Roofline | BM_applyCnotGate | BM_applySingleQubitGate | 
 |---   |---          |---               |---                      |  
-|8(in-cache)     | 1.07 cycle per amp | 2.85 Cycle per pair | 13.84 cycle per pair| 
-|24(DRAM)    | 4.08 cycle per amp | 8.68 Cycle per pair | 18.16 cycle per pair| 
+|8(in-cache)     | 1.07 cycle per amp | 2.85 cycle per pair | 13.84 cycle per pair| 
+|24(DRAM)    | 4.08 cycle per amp | 8.68 cycle per pair | 18.16 cycle per pair| 
 |DRAM TAX| +3.01 per amp| +5.83 per pair| +4.32 per pair|
 
 
 Roofline: Touching an Amplitude<br>
-CNOT: index calculations, branch and swap. +1.78 Cycle per pair.
+CNOT: index calculations, branch and swap. +1.78 cycle per pair.
 CNOT only touches pairs where the control bit set to 1, half the amps of our state but then reads and writes 2 amps, so the total is 1 amp on average which makes the comparison 1:1 with the roofline<br>
 H Gate: Same index same writing but matrix operation. +10.99 cycles per pair.
 
 
 Roofline states the tax for moving from cache to DRAM is +3.01 cycles per amp. Looking at the CNOT gate we get 5.83 per pair. Since the CNot touches two amps it roughly matches the expected cost increase. 
-Interestingly the single Qubit only increases by +4.32, the long calculations are able to hide the memory slowdown. The function keeps calculating while new pairs are slowly moved through memory. This is not a clear compute-bound rather a mix of both. 
-Whereas the roofline and CNOT Gate are purely memory bound at 24 qubits.
+Interestingly the single qubit only increases by +4.32, the long calculations are able to hide the memory slowdown. The function keeps calculating while new pairs are slowly moved through memory. This is not a clear compute-bound rather a mix of both. 
+Whereas the roofline and CNOT gate are purely memory bound at 24 qubits.
 
 
 
@@ -388,11 +388,11 @@ Our focus should be the single qubit operations, since the matrix calculations s
 
 #### Improving Methodology 
 
-The benchmark for H Gate is currently a bit of a black box, 
+The benchmark for H gate is currently a bit of a black box, 
 so for future benchmarks it's worth adding: 
 SingleQubitGate-Index Only: load both amplitudes, read and write back but without any math. -> We can calculate. Full H Gate - Index = arithmetics costs.
 
-SingleQubitGate-Sequential Index: use a loop to go through the indices and compute sequentially without getPairIndices function. -> this will measure our GetIndicies Cost in context.
+SingleQubitGate-Sequential Index: use a loop to go through the indices and compute sequentially without getPairIndices function. -> this will measure our GetIndicies cost in context.
 
 
 ### Reproduction of this Benchmark 
