@@ -1,6 +1,6 @@
 # Benchmark Log
 
-This Log will document every benchmark run. It acts as a basis for further optmizations, showing areas worth improving and showing the effectiveness of said improvements.
+This log will document every benchmark run. It acts as a basis for further optimizations, showing areas worth improving and their effectiveness.
 
 - [Setup](#setup)
   - [System Specs](#system-specs)
@@ -35,7 +35,7 @@ This Log will document every benchmark run. It acts as a basis for further optmi
 
 ### System Specs
 
-All the CPU benchmarks are run on laptop with the listed specs. 
+All the CPU benchmarks are run on a laptop with the listed specs. 
 
 - machine: "tom-Yoga-7-2-in-1-14ILL10"
 - CPU: Intel(R) Core(TM) Ultra 7 258V, 8 Cores
@@ -56,28 +56,28 @@ All the CPU benchmarks are run on laptop with the listed specs.
 
 #### Correctness
 
-We use unit tests with the google/test harness to ensure correctness of single functions and the Qiskit library to cross-check our end-to-end calculations.
+We use unit tests with the `googletest` harness to ensure correctness of single functions and the Qiskit library to cross-check our end-to-end calculations.
  
 
 #### Benchmarking 
 
-There are 5 benchmarking families, all exclude state and circuit constructions – shifting the focus towards arithmetics and memory transfers.
+There are 5 benchmarking families, all exclude state and circuit construction – shifting the focus towards arithmetic and memory transfers.
 The families are defined as follows:
 
- - Single qubit gate: Runs H gate on |0…0> State
- - CNOT qubit gate: Runs CNOT gate on |0…0> State
- - GHZ State: Runs H gate and then n-1 CNOT Gates on |0…0> State
+ - Single qubit gate: Runs H gate on |0…0> state
+ - CNOT qubit gate: Runs CNOT gate on |0…0> state
+ - GHZ state: Runs H gate and then n-1 CNOT gates on |0…0> state
  - Get Pair Indices: Calculates pair indices from pair numbers
  - Single Qubit Gate Target Sweep: Applies H gate on different target qubits.
 
-There is a 6th family, the roofline test, which we use to get a realistic hardware limitation of the device the tests run on. 
+There is a sixth family, the roofline test, which we use to get a realistic hardware limit for the device the tests run on. 
 
 
 Each family is run 5 times to get a more accurate result and rule out extreme outliers.
 
 All families count 32 bytes of traffic for every amplitude a gate updates: 
 
-16 bytes read + 16 bytes written, one complex<double> in each direction. 
+16 bytes read + 16 bytes written, one `complex<double>` in each direction. 
 
 The single-qubit gate updates all 2ⁿ amplitudes and is therefore charged 32·2ⁿ bytes per call.
 
@@ -89,11 +89,11 @@ GHZ is charged one H gate plus n-1 CNOT gates: 32·2ⁿ + (n-1) · 32 · 2ⁿ⁻
 The rule is consistent, so GB/s measures useful throughput within a family. But it is not a speed comparison between families: 
 
 
-Google benchmark does not measure bytes processed instead we declare it and CNOT is charged half the bytes for the same number of loop iterations, so its GB/s understates it by 2×.
+`google/benchmark` does not measure bytes processed, we declare them, and CNOT is charged half the bytes of the H gate for the same number of loop iterations, so its GB/s understates it by 2x.
 
-In order to compare Cross-family we will use time per loop iteration instead.
+To compare across families we will use the time, per loop iteration, instead.
 
-The exact numbers can be found in the [numbers.md](../benchmarks/results/2026-07-28-cpu-baseline-naive/numbers.md) of each benchmark.
+The exact numbers can be found in the [numbers.md](../benchmarks/results/2026-07-28-cpu-baseline-naive/numbers.md) of each respective benchmark.
 
 ## Hardware Rooflines
 
@@ -109,28 +109,28 @@ As a reminder:
 >      - L1i: 64K   
 >      - L2: 2.5M     
 >      - L3: 12M 
-> - Maximum bandwidth = <b>136.528 GB/s</b>
+> - maximum bandwidth = **136.528 GB/s**
 > - Vector size: 2^n · 16 Bytes
 
 
-Maximum bandwidth = DRAM bandwidth * bus size / 8 / 1000
+maximum bandwidth = DRAM bandwidth * bus width / 8 / 1000
 
-Maximum Bandwidth = 8533 MT/s * 128 bit bus width / 8 / 1000 = <b>136.528 GB/s</b>
+maximum bandwidth = 8533 MT/s * 128 bit bus width / 8 / 1000 = **136.528 GB/s**
 
-Looking at our state representation – a vector of complex<double> – each amplitude requires 16 byte, therefore our n-qubit state will grow to size 2^n · 16 bytes. 
+Looking at our state representation – a vector of `complex<double>` – each amplitude requires 16 bytes, therefore our n-qubit state will grow to size 2^n · 16 bytes. 
 
-Knowing this size we can now compute where our vector should be cached in.
+Knowing this size we can now compute where our vector should fit in.
 
 Hypothesis: 
 
-L1 = 48KiB = 48 * 1024 = 49152 Bytes
+L1 = 48KiB = 48 * 1024 = 49152 bytes
 
  Solve: 
  2^n * 16 = 49152 for n 
 
  -> n = 11.5 
 
- All states with 11 qubits and less should fit in our L1 cache.
+ All states with 11 qubits or fewer should fit in our L1 cache.
 
  Likewise:
 
@@ -138,7 +138,7 @@ L1 = 48KiB = 48 * 1024 = 49152 Bytes
 
  L3 -> n = 19.6
 
-DRAM(32GiB) n = 31: 
+DRAM (32GiB) -> n = 31
 
 This is a theoretical number since the OS itself needs DRAM and would not be able to spend all resources to just hold the state.
 
@@ -146,15 +146,16 @@ This is a theoretical number since the OS itself needs DRAM and would not be abl
 
 #### Multicore Limits
 
-Using Intel's Memory Latency Checker(MLC) we get a practical limit for Read-Write operation (multi-core) of 
-1:1 Reads-Writes : 97666.1 MB/sec
-Still shy of our theoretical 136.528 GB/sec, but it is expected to never hit the theoretical roofline.
+Using Intel's Memory Latency Checker (MLC) we get a practical limit for read-write operation (multi-core) of 
+1:1 reads-writes : 97.67 GB/s
+
+Still shy of our theoretical 136.528 GB/s, but nobody expects to hit the theoretical roofline.
 
 
 #### Single core Limits
 
-To have a roofline of this exact machine all benchmarks are also compared to a simple arithmetic function. 
-We read the state, multiply with a double and write back to the amplitudes. This is one of the most rudimentary operations and should provide a good roofline for our hardware.
+To have a roofline for this exact machine all benchmarks are also compared to a simple arithmetic function. 
+We read the state, multiply by a double and write back to the amplitudes. This is one of the most rudimentary operations and should provide a good roofline for our hardware.
 
  ![Roofline Benchmark](../benchmarks/results/2026-07-28-cpu-baseline-naive/BM_roofline.png "Loop Iterating over a state with read and write")
 
@@ -164,28 +165,30 @@ Our processed data per second is far from the theoretical bandwidth, strangely e
 
 Explanation: 
 
-<b>Overprocessing (Qubits 2-14):</b>
+**Overprocessing (qubits 2-14):**
+
 The memory bandwidth limit is calculated for DRAM. Since the states are so small they can fit entirely into the L3 cache or lower, the theoretical DRAM limit does not apply.
 
-<b>Heavy under processing (Qubits 20+)</b>
+**Heavy underprocessing (qubits 20+):**
+
 One possible explanation is that we operate our function on one single core, which is not able to fill the whole memory bandwidth. 
-This could be solved/improved with a multi-core implementation. (Which will be the focus of the CUDA backend implementation.)
+This could be solved/improved with a multi-core implementation. (This will be the focus of the CUDA backend.)
 
 
 Observation:
 
-Another noteworthy anomaly is the irregular curve from qubit sizes 2 till 10. 
+Another noteworthy anomaly is the irregular curve from qubit sizes 2 to 10. 
 
 Explanation:
 
-This is likely caused by the overhead from the loop and google benchmarks measuring methods. 
+This is likely caused by the overhead from the loop and `google/benchmark` measuring methods. 
 
 
 
 
 #### Predicted vs measured cache transitions
 
-More interestingly our predicted performance drops happen later than anticipated. 
+More interestingly, our predicted performance drops happen later than anticipated. 
 
 | Cache Switch (from/to) | Predicted Drop | Actual Drop |
 | ---------------------- | -------------- | ----------- |
@@ -195,14 +198,14 @@ More interestingly our predicted performance drops happen later than anticipated
 
 Possible Explanation: 
 
-The original hypothesis assumed that as soon as the state does not fit in one cache the whole state gets transferred to the next higher level. The data suggests a different approach. 
-The state gets partially fitted in a cache level, which results in only partial cache misses. This creates a somewhat gradual performance decrease until the majority of the state lives in the next cache.
+The original hypothesis assumed that as soon as the state does not fit in one cache the whole state gets transferred to the next higher level. The data suggests otherwise. 
+The state partially fits in a cache level, which results in only partial cache misses. This creates a somewhat gradual performance decrease until the majority of the state lives in the next cache.
 
-Keeping in Mind:
+Keep in mind:
 
-L2 as well as L3 cache are unified, so the instructions from our Google benchmark loop will also occupy space. 
+L2 and L3 are unified caches, so the instructions from our `google/benchmark` loop will also occupy space. 
 
-More important the L3 Cache is shared amongst all 4 performance cores, meaning the OS and outside applications could occupy space as well, leaving less for the state. 
+More importantly, the L3 cache is shared among all 4 performance cores, meaning the OS and outside applications could occupy space as well, leaving less for the state. 
 
 
 
@@ -212,27 +215,29 @@ More important the L3 Cache is shared amongst all 4 performance cores, meaning t
 
 ## 2026-07-28 - CPU baseline (naive)
 
+The exact numbers can be found in the [numbers.md](../benchmarks/results/2026-07-28-cpu-baseline-naive/numbers.md).
+
 
 >git sha: 16f529f
 >
 >date: 2026-07-28 10:08
 
-This is the first naive CPU implementation without further optimization. It runs the simulator on a single performance core and uses complex<double> to store values
-The machine has `cpu_scaling` enabled, but each family is run 5 times with a median coefficient of variation of 0.41%, the max CV being 2.56%. Showing the effect of the scaling is negligible noise. 
+This is the first naive CPU implementation without further optimization. It runs the simulator on a single performance core and uses `complex<double>` to store values.
+The machine has `cpu_scaling` enabled, but each family is run 5 times with a median coefficient of variation of 0.41%, the max CV being 2.56%, showing the effect of the scaling is negligible noise. 
 
 ### Limitations
 
 Before looking at our numbers we need to outline the limitations of this benchmark:
- - single laptop;
- - cpu_scaling on; 
- - 4.7 GHz is nominal so cycle counts are approximate; 
- - one pinned core;
- - single compiler;
- - target 0 in the main tables, which the sweep shows is the slowest target in DRAM;
- -  H is the only single-qubit gate measured;
- - input is |0…0⟩, (does not matter since the loops are data independent, do not rely on previous loop);
+ - single laptop
+ - `cpu_scaling` on
+ - 4.7 GHz is nominal so cycle counts are approximate
+ - one pinned core
+ - single compiler
+ - target 0 in the main tables, which the sweep shows is the slowest target in DRAM
+ - H is the only single-qubit gate measured
+ - input is |0…0> (does not matter since the loops are data-independent and do not rely on the previous loop)
 
- Because of this we will never have a true 1:1 reproducible run, but the average is for our use case enough to show and recognize performance issues.
+ Because of this we will never have a true 1:1 reproducible run, but the averages are enough to show and recognize performance issues.
 
 ### Results
 
@@ -252,14 +257,15 @@ Before looking at our numbers we need to outline the limitations of this benchma
 
 ![Single Qubit Gate](../benchmarks/results/2026-07-28-cpu-baseline-naive/BM_applySingleQubitGate.png "CPU Naive Single Qubit Gate Benchmarks")
 
-Observation
-Throughout L1 to L3 cache the throughput seems stable, this suggests that the function is not memory bound rather computation bound. It is up to 7.2x slower than our roofline function.
+Observation:
+
+Throughout L1 to L3 cache the throughput seems stable, which suggests that the function is compute-bound rather than memory-bound. It is up to 7.2x slower than our roofline function.
 
 
-Interestingly enough there is a steep drop between the 20 and 21 qubit mark, this is likely due to the relocation of the state to DRAM. 
+Interestingly enough there is a steep drop between the 20 and 21 qubit mark, which is likely due to the relocation of the state to DRAM. 
 
- We can tell from the Roofline plot that our memory bound is at roughly 36.86 GB/s and the compute bound for the single-qubit gate lies at roughly 22 GB/s. 
-Why is the current throughput 16 GB/s instead of 22 GB/s, for high qubits?
+ We can tell from the roofline plot that our memory bound is at roughly 36.86 GB/s and the compute bound for the single-qubit gate lies at roughly 22 GB/s. 
+Why is the current throughput 16 GB/s instead of 22 GB/s, at high qubit counts?
 <details><summary>Roofline plot</summary>
 
 ![Roofline](../benchmarks/results/2026-07-28-cpu-baseline-naive/BM_roofline.png)
@@ -270,7 +276,7 @@ Why is the current throughput 16 GB/s instead of 22 GB/s, for high qubits?
 Explanation:
 
 We are experiencing memory stalls. 
-Our prefetching is not able to provide cache-lines fast enough, causing stalls and since the DRAM latency is too high it can't be hidden, the memory is not fast enough to keep the core constantly fed with information. It's not pure memory bound though, we also experience a compute bottleneck. Instead of having one specific bound we experience an interplay between compute and memory bound. Where the CPU keeps waiting for memory to finish the loading operations and the memory keeps waiting for the computations to finish.
+Our prefetching is not able to provide cache lines fast enough, causing stalls, and since the DRAM latency is too high it cannot be hidden: the memory is not fast enough to keep the core constantly fed with information. It is not purely memory-bound though, we also experience a compute bottleneck. Instead of having one specific bound we experience an interplay between compute and memory bounds, where the CPU keeps waiting for memory to finish the loading operations and the memory keeps waiting for the computations to finish.
 
 
 
@@ -281,112 +287,113 @@ Our prefetching is not able to provide cache-lines fast enough, causing stalls a
 
 
 Observation:
-1. Again we see a compute-bound for the L1 and L2 cache, here the performance degradation happens earlier, as the throughput already starts to decrease in transition to L3 cache and onwards. 
+1. Again we are compute-bound in L1 and L2 cache. Here the performance degradation happens earlier, as the throughput already starts to decrease in the transition to L3 cache and onwards. 
 
-2. One strange observation is the higher throughput of the CNOT gate compared to our singleQubitGate (2.6x higher in GB/s and 5.2x faster per Pair, two numbers because of the bytes processed difference). The seemingly more complex CNOT gate costs apparently less than our single qubit gate. 
+2. One strange observation is the higher throughput of the CNOT gate compared to our single-qubit gate (2.6x higher in GB/s and 5.2x faster per pair, two numbers because of the different declared bytes). The seemingly more complex CNOT gate costs apparently less than our single-qubit gate. 
 For a fair comparison we will look at the time it took for one pair to be calculated. <br>
-At qubit 24 this advantage collapses to 2.1x. 
+At 24 qubits this advantage collapses to 2.1x. 
 
 
-| qubits | H ns/pair | CNOT ns/ pair | H / CNOT |
+| qubits | H ns/pair | CNOT ns/pair | H / CNOT |
 | ------ | --------- | ------------- | -------- |
 | 8      | 2.94      | 0.61          | 4.8x     |
-| 12     | 2.91      | 0.56          | 5.2×     |
-| 16     | 2.92      | 0.57          | 5.1×     |
-| 20     | 3.35      | 0.93          | 3.6×     |
-| 24     | 3.86      | 1.85          | 2.1×     |
+| 12     | 2.91      | 0.56          | 5.2x     |
+| 16     | 2.92      | 0.57          | 5.1x     |
+| 20     | 3.35      | 0.93          | 3.6x     |
+| 24     | 3.86      | 1.85          | 2.1x     |
 
 Explanation: 
-1. The drop probably stems from the same cause as in our single qubit gate. The high latencies can not be hidden by our CPU anymore. Since our operational speed is a lot higher than with the single qubit gate, this happens one memory stage earlier and is visible even with the L3 cache. We are not able to prefetch enough lines to hide our latencies. 
+1. The drop probably stems from the same cause as in our single-qubit gate. The high latencies cannot be hidden by our CPU anymore. Since our operational speed is a lot higher than with the single-qubit gate, this happens one memory stage earlier and is visible even with the L3 cache. We are not able to prefetch enough lines to hide our latencies. 
 
-2. Looking closer at our functions the speed difference is quite obvious. Being made up by branching logic, the CNOT gates eliminate a half of the operations. The remaining operations are amplitude swaps without any computations – which are minimal compared to the heavy matrix arithmetics in our singleQubitGate. 
-The drop in the performance advantage 5.1x -> 2.1x is probably caused by the fact that both functions experience heavy stalls and have to wait on the DRAM.
-This performance difference might be worth looking at after the GPU optimization, since with the single qubit we will be able to compute parallel whereas for our branching we will mask. So my intuition would suggest that in the GPU version the single qubit will surpass our CNOT gate in performance. 
+2. Looking closer at our functions, the speed difference is quite obvious. Being made up by branching logic, the CNOT gates eliminate half of the operations. The remaining operations are amplitude swaps without any computations – which are minimal compared to the heavy matrix arithmetic in our single-qubit gate. 
+The drop in the performance advantage from 5.1x to 2.1x is probably caused by the fact that both functions experience heavy stalls and have to wait on the DRAM.
+This performance difference might be worth looking at after the GPU optimization, since with the single-qubit gate we will be able to compute in parallel whereas the branch will become a mask. So my intuition would suggest that in the GPU version the single-qubit gate will surpass our CNOT gate in performance. 
 
 #### GHZ State
 
 ![GHZ State](../benchmarks/results/2026-07-28-cpu-baseline-naive/BM_ghzState.png "CPU Naive GHZ State Benchmarks")
 
-Observation: performance ramps up logarithmically to a peak of 46.15 GB/s at 16 qubits, starts to fall from qubits 17 and flattens roughly at 22 GB/s from 22 qubits. 
-A GHZ gate is one H gate followed by N-1 CNOT gates, so asymptotically it should behave like the CNOT benchmark. It does not, in cache it is 18% slower (46.15 GB/s vs. 56.19 GB/s at 16 qubits) and in DRAM it is actually faster than our raw CNOT gate operation. (22.53 GB/s vs. 17.34 GB/s)
+Observation: performance ramps up logarithmically to a peak of 46.15 GB/s at 16 qubits, starts to fall from 17 qubits and flattens at roughly 22 GB/s from 22 qubits. 
+A GHZ circuit is one H gate followed by n-1 CNOT gates, so asymptotically it should behave like the CNOT benchmark. It does not: in cache it is 18% slower (46.15 GB/s vs. 56.19 GB/s at 16 qubits) and in DRAM it is actually faster than our raw CNOT gate operation (22.53 GB/s vs. 17.34 GB/s).
 
 
 
 Hypothesis: 
-The general performance drop – in the lower qubits – could stem from our circuit object overhead. It runs each gate as an Operation in a list, this could incur overhead which we did not have when we benchmarked the raw function. 
+The general performance drop – in the lower qubits – could stem from our circuit object overhead. It runs each gate as an `Operation` in a list, which could incur overhead that we did not have when we benchmarked the raw function. 
 
 Test: 
-Looking at our numbers we can compare the 18 % and evaluate overhead vs. the single H gate slowing us down. 
-|                       |               |
-| --------------------- | ------------- |
-| GHZ call at 16 qubits | 386237.7371ns |
-| CNOT gate             | 18663.4173 ns |
-| single H gate         | 95527.2835 ns |
-| Raw GHZ time          | 375478.543 ns |
-| Slowdown              | 10759.1941 ns |
+Looking at our numbers we can compare the 18% and evaluate overhead vs. the single H gate slowing us down. 
+
+|                       |                |
+| --------------------- | -------------- |
+| GHZ call at 16 qubits | 386237.7371 ns |
+| CNOT gate             | 18663.4173 ns  |
+| single H gate         | 95527.2835 ns  |
+| Raw GHZ time          | 375478.543 ns  |
+| Slowdown              | 10759.1941 ns  |
 
 Raw GHZ time = H + CNOT * (n-1) <br>
-Slow down = GHZ Call - raw GHZ time
+Slowdown = GHZ call - raw GHZ time
 
-So we have residuals (Overhead, cache misses) slowing us down by 10759.2 ns or 3 %. 
-This is minimal and clarifies the 18 % from earlier. The logarithmic ramp up is not coming from our circuit overhead but its the slow H gate showing a bigger impact when there is fewer CNot Gates.
-The 3 % are minimal and do not constitute for further improvement for now.
+So we have residuals (overhead, cache misses) slowing us down by 10759.2 ns or 3%. 
+This is minimal and clarifies the 18% from earlier. The logarithmic ramp-up is not coming from our circuit overhead but it is the slow H gate showing a bigger impact when there are fewer CNOT gates.
+The 3% is minimal and does not warrant further improvement for now.
 
 Observation: 
 
-By far the most interesting observation, is the fact that our GHZ is faster than our CNOT function for high qubits. This is extremely unintuitive seeing it is more complex and should be slower with all the overheads. 
+By far the most interesting observation is the fact that our GHZ is faster than our CNOT function for high qubits. This is extremely unintuitive, since it is more complex and should be slower with all the overheads. 
 
 Possible Explanation:
-This speed up could be related to target bits. With our CNOT gate we always took the same control and target-bit being 0 and 1 respectively. Our GHZ state takes i, i+1 as control and target. Increasing the distance between indices in a pair. 
+This speed-up could be related to target bits. With our CNOT gate we always took the same control and target bits, 0 and 1 respectively. Our GHZ state takes i, i+1 as control and target, increasing the distance between the indices in a pair. 
 
 
 
 #### One-off benchmarks
 
-There will be two benchmarks which we will introduce now but will not elaborate more in future benchmarks for the sake of avoiding redundancy.
+There are two benchmarks which we introduce now but will not elaborate on in future benchmarks, for the sake of avoiding redundancy.
 
 ##### GetPairIndices
 
 ![Get Pair Indices](../benchmarks/results/2026-07-28-cpu-baseline-naive/BM_getPairIndices.png "CPU Naive Get Pair indices Benchmarks")
 
-The function is as expected stable.
-We operate directly through bit modifications and without branches. Thanks to the bit operations we do not see a performance degradation for pairs which are far apart (e.g., 1 and 2^n -1).
+The function is, as expected, stable.
+We operate directly through bit modifications and without branches. Thanks to the bit operations we do not see a performance degradation for pairs which are far apart (e.g., 1 and 2^n - 1).
 
-Importantly, we can not look at the speed since the function is seemingly harness bound. 
-Looking at the numbers.md we can see we hover at roughly 3.70 cycles/iter. (The small fluctuations stem from the google benchmark overhead, timing and loop setups – the effect on the measurement becomes less with more iterations).
-If we now compare this data with the CNOT Gate function.
+Importantly, we cannot look at the speed since the function is seemingly harness-bound. 
+Looking at numbers.md we can see that we hover at roughly 3.70 cycles/iter. (The small fluctuations stem from the `google/benchmark` overhead, timing and loop setup – the effect on the measurement becomes smaller with more iterations).
+We now compare this data with the CNOT gate function:
 
 | GetPairIndices   | CNOT gate (8 qubits) |
 | ---------------- | -------------------- |
 | 3.70 cycles/iter | 2.85 cycles/iter     |
 
-This is a contradiction since CNOT, calculates pair indices, reads the value of the amplitudes and writes back to them and should therefore take more cycles than our pure function.
+This is a contradiction since CNOT calculates pair indices, reads the values of the amplitudes and writes back to them and should therefore take more cycles than our pure function.
 
 Explanation: 
-`Get Pair Indices` is a pure function which reads input, computes and just returns a value, without changing any variables of our code. 
- Since we are doing an isolated test and the value never gets used, the compiler will evaluate the code as dead. To combat this we used the `DoNotOptimize` function, which explicitly forces the function to execute. This does not resemble our real work flow since the compiler would be able to optimize and inline the function, calling it while waiting for loads or storing. 
+`getPairIndices` is a pure function which reads input, computes and just returns a value, without changing any variables of our code. 
+Since we are doing an isolated test and the value never gets used, the compiler will treat the code as dead. To combat this we used the `DoNotOptimize` function, which explicitly forces the function to execute. This does not resemble our real workflow since the compiler would be able to optimize and inline the function, calling it while waiting for loads or stores. 
 
-So the important insight is that Get Pair Indices is harness bound at the moment, and we can not measure future improvements. 
+So the important insight is that `getPairIndices` is harness-bound at the moment, and we cannot measure future improvements. 
 
 
 ##### Apply Single Qubit Gate Target Sweep
 
 ![Apply Single Qubit Gate Target Sweep](../benchmarks/results/2026-07-28-cpu-baseline-naive/BM_applySingleQubitGateTargetSweep.png "CPU Naive Apply Single Qubit Gate Target Sweep Benchmarks")
 
-Explanation: This benchmark builds various states of different sizes and checks whether different target bits influence operation speeds. 
+Setup: This benchmark builds various states of different sizes and checks whether different target bits influence the operation speed. 
 
 Original Hypothesis: <br>
-Yes there will be an influence.<br> 
+Yes, there will be an influence.<br> 
 > High target bit -> amplitudes further apart in memory -> two accesses -> to separate cache lines.<br>
 
-Since the amplitudes do not lie next to each other in memory, we can not access them with one cache-line, needing two which reduces our speed since we have to wait until both arrive.
+Since the amplitudes do not lie next to each other in memory, we cannot access them with one cache line, needing two, which reduces our speed since we have to wait until both arrive.
 
 Observation: <br>
-The original hypothesis is inverted. The further apart in memory the amplitudes are, the faster the function goes. We can see that for a 24 qubit state with target bit 0 we get 16.57 GB/s. After we increase the target bit to 10 and higher this degradation plateaus at 20.7 GB/s vs. the 22.0 in-cache bound — 94%. We are approaching our cache-computation bounds.
-This effect could be already seen in the GHZ state test. It performed faster than the raw CNOT test, with the same reason. Our bits become further apart with later CNOT gates.
+The original hypothesis is inverted. The further apart in memory the amplitudes are, the faster the function goes. We can see that for a 24-qubit state with target bit 0 we get 16.57 GB/s. After we increase the target bit to 10 and higher this degradation plateaus at 20.7 GB/s vs. the 22.0 in-cache bound — 94%. We are approaching our cache-computation bounds.
+This effect could already be seen in the GHZ state test. It performed faster than the raw CNOT test for the same reason: our bits become further apart with later CNOT gates.
 
 Possible Explanation:<br>
-The processor prefetches amplitudes to queue them to be processed. If the pairs are next to each other the processor will use one stream to prefetch cache lines. If we have two far apart pairs the processor will use parallel memory access, using two streams for prefetching. Essentially doubling our lines in flight and hiding the dram latency. 
+The processor prefetches amplitudes to queue them to be processed. If the pairs are next to each other the processor will use one stream to prefetch cache lines. If we have two far-apart pairs the processor will use parallel memory access, using two streams for prefetching, essentially doubling our lines in flight and hiding the DRAM latency. 
 
 
 ### Conclusion
@@ -394,22 +401,22 @@ The processor prefetches amplitudes to queue them to be processed. If the pairs 
 #### Cost Model 
 
 
-| qubits      | BM_Roofline        | BM_applyCnotGate    | BM_applySingleQubitGate |
-| ----------- | ------------------ | ------------------- | ----------------------- |
-| 8(in-cache) | 1.07 cycle per amp | 2.85 cycle per pair | 13.84 cycle per pair    |
-| 24(DRAM)    | 4.08 cycle per amp | 8.68 cycle per pair | 18.16 cycle per pair    |
-| DRAM TAX    | +3.01 per amp      | +5.83 per pair      | +4.32 per pair          |
+| qubits       | BM_Roofline         | BM_applyCnotGate     | BM_applySingleQubitGate |
+| ------------ | ------------------- | -------------------- | ----------------------- |
+| 8 (in-cache) | 1.07 cycles per amp | 2.85 cycles per pair | 13.84 cycles per pair   |
+| 24 (DRAM)    | 4.08 cycles per amp | 8.68 cycles per pair | 18.16 cycles per pair   |
+| DRAM tax     | +3.01 per amp       | +5.83 per pair       | +4.32 per pair          |
 
 
-- Roofline: Touching an Amplitude
-- CNOT: index calculations, branch and swap. +1.78 cycle per pair.
-  CNOT only touches pairs where the control bit set to 1, half the amps of our state but then reads and writes so it will change half of the amps but does two operations on them, so the total is 1 amp on average which makes the comparison 1:1 with the roofline.
+- Roofline: touching an amplitude
+- CNOT: index calculations, branch and swap. +1.78 cycles per pair.
+  CNOT only touches pairs where the control bit is set to 1, half the amps of our state but then reads and writes so it will change half of the amps but does two operations on them, so the total is 1 amp on average which makes the comparison 1:1 with the roofline.
 - H Gate: Same index same writing but matrix operation. +10.99 cycles per pair.
 
 
 Roofline states the tax for moving from cache to DRAM is +3.01 cycles per amp. Looking at the CNOT gate we get 5.83 per pair. 
-Since the CNOT touches two amps(read and write) it roughly matches the expected cost increase, 2 times our simple roofline DRAM Tax. (WRONG its 1 to 1 so doubling comes elsewhere)
-Interestingly the single qubit only increases by +4.32, the long calculations are able to hide the memory slowdown. The function keeps calculating while new pairs are slowly moved through memory. This is not a clear compute-bound rather a mix of both. 
+Since the CNOT touches two amps (read and write) it roughly matches the expected cost increase, 2 times our simple roofline DRAM tax. (WRONG its 1 to 1 so doubling comes elsewhere)
+Interestingly the single-qubit gate only increases by +4.32, the long calculations are able to hide the memory slowdown. The function keeps calculating while new pairs are slowly moved through memory. This is not a clear compute-bound rather a mix of both. 
 Whereas the roofline and CNOT gate are purely memory bound at 24 qubits.
 
 
@@ -418,20 +425,20 @@ Whereas the roofline and CNOT gate are purely memory bound at 24 qubits.
 
 #### Improving Performance 
 
-The most extreme performance gain would be achieved by enabling more cores. We are nowhere near our maximal memory bandwidth and should be able to at least double our performance here. 
+The most extreme performance gain would be achieved by enabling more cores. We are nowhere near our maximum memory bandwidth and should be able to at least double our performance here. 
 
-Afterward it would be worth seeing if we can remove arithmetic bottlenecks, since we tend to be compute-bound rather than memory-bound. 
-At last, we should look closer into our prefetching and cache misses to hide dram latencies. 
-Our focus should be the single qubit operations, since the matrix calculations seem to slow us down the most. 
+Afterward, it would be worth seeing if we can remove arithmetic bottlenecks, since we tend to be compute-bound rather than memory-bound. 
+Lastly, we should look closer into our prefetching and cache misses to hide DRAM latencies. 
+Our focus should be the single-qubit operations, since the matrix calculations seem to slow us down the most. 
 
 
 #### Improving Methodology 
 
-The benchmark for H gate is currently a bit of a black box, 
-so for future benchmarks it's worth adding: 
-- SingleQubitGate-Index Only: load both amplitudes, read and write back but without any math. With this  we can calculate. Full H Gate - Index = arithmetics costs.
+The benchmark for the H gate is currently a bit of a black box, 
+so for future benchmarks it is worth adding: 
+- SingleQubitGate-Index Only: load both amplitudes, read and write back but without any math. With this we can calculate: Full H Gate - Index = arithmetic costs.
 
-- SingleQubitGate-Sequential Index: use a loop to go through the indices and compute sequentially without getPairIndices function. This will measure our GetIndicies cost in context.
+- SingleQubitGate-Sequential Index: use a loop to go through the indices and compute sequentially without the `getPairIndices` function. This will measure our `getPairIndices` cost in context.
 
 
 ### Reproduction of this Benchmark 
@@ -446,11 +453,10 @@ pinned versions.
        python3 -m venv .venv
        .venv/bin/pip install -r requirements.txt
 
-2. Configure once Release with benchmarks enabled. Without `QSIM_BENCHMARK=ON` the
+2. Configure Release once, with benchmarks enabled. Without `QSIM_BENCHMARK=ON` the
    `bench` target does not exist at all:
 
-      
-        cmake --preset benchmark                       
+       cmake --preset benchmark
 
 3. Build and run. Writes `benchmarks/results/latest.json`:
 
@@ -460,12 +466,12 @@ pinned versions.
 
        .venv/bin/python scripts/plot_benchmarks.py --overlay --caches --save cpu-baseline-naive
 
-   This creates `benchmarks/results/<date>-<label>/` holding a copy of the JSON, the numbers.md
+   This creates `benchmarks/results/<date>-<label>/` holding a copy of the JSON, the `numbers.md`
    and every plot used in this document. The date comes from the JSON's own
    context block rather than from the clock, so re-plotting an old run still
    files it under the day it was measured.
 
-`latest.json` and `latest/` are gitignored; only labelled runs are committed.
+`latest.json` and `latest/` are gitignored; only labeled runs are committed.
 
 #### What has to match for the numbers to be comparable
 
