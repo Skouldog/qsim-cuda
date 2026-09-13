@@ -295,12 +295,12 @@ At 24 qubits this advantage collapses to 2.1x.
 
 
 | qubits | H ns/pair | CNOT ns/pair | H / CNOT |
-| ------ | --------- | ------------- | -------- |
-| 8      | 2.94      | 0.61          | 4.8x     |
-| 12     | 2.91      | 0.56          | 5.2x     |
-| 16     | 2.92      | 0.57          | 5.1x     |
-| 20     | 3.35      | 0.93          | 3.6x     |
-| 24     | 3.86      | 1.85          | 2.1x     |
+| ------ | --------- | ------------ | -------- |
+| 8      | 2.94      | 0.61         | 4.8x     |
+| 12     | 2.91      | 0.56         | 5.2x     |
+| 16     | 2.92      | 0.57         | 5.1x     |
+| 20     | 3.35      | 0.93         | 3.6x     |
+| 24     | 3.86      | 1.85         | 2.1x     |
 
 Explanation: 
 1. The drop probably stems from the same cause as in our single-qubit gate. The high latencies cannot be hidden by our CPU anymore. Since our operational speed is a lot higher than with the single-qubit gate, this happens one memory stage earlier and is visible even with the L3 cache. We are not able to prefetch enough lines to hide our latencies. 
@@ -389,7 +389,7 @@ Yes, there will be an influence.<br>
 Since the amplitudes do not lie next to each other in memory, we cannot access them with one cache line, needing two, which reduces our speed since we have to wait until both arrive.
 
 Observation: <br>
-The original hypothesis is inverted. The further apart in memory the amplitudes are, the faster the function goes. We can see that for a 24-qubit state with target bit 0 we get 16.57 GB/s. After we increase the target bit to 10 and higher this degradation plateaus at 20.7 GB/s vs. the 22.0 in-cache bound — 94%. We are approaching our cache-computation bounds.
+The original hypothesis is inverted. The further apart in memory the amplitudes are, the faster the function goes. We can see that for a 24-qubit state with target bit 0 we get 16.57 GB/s. After we increase the target bit to 10 and higher this recovery plateaus at 20.7 GB/s vs. the 22.0 in-cache bound — 94%. We are approaching our in-cache compute bound.
 This effect could already be seen in the GHZ state test. It performed faster than the raw CNOT test for the same reason: our bits become further apart with later CNOT gates.
 
 Possible Explanation:<br>
@@ -410,14 +410,13 @@ The processor prefetches amplitudes to queue them to be processed. If the pairs 
 
 - Roofline: touching an amplitude
 - CNOT: index calculations, branch and swap. +1.78 cycles per pair.
-  CNOT only touches pairs where the control bit is set to 1, half the amps of our state but then reads and writes so it will change half of the amps but does two operations on them, so the total is 1 amp on average which makes the comparison 1:1 with the roofline.
+  CNOT only touches pairs where the control bit is set to 1, half the amps of our state but then reads and writes so it will change half of the amps but does two operations on them, so the total is 1 amp on average which makes the comparison 1:1 per state with the roofline.
 - H Gate: Same index same writing but matrix operation. +10.99 cycles per pair.
 
 
 Roofline states the tax for moving from cache to DRAM is +3.01 cycles per amp. Looking at the CNOT gate we get 5.83 per pair. 
-Since the CNOT touches two amps (read and write) it roughly matches the expected cost increase, 2 times our simple roofline DRAM tax. (WRONG its 1 to 1 so doubling comes elsewhere)
-Interestingly the single-qubit gate only increases by +4.32, the long calculations are able to hide the memory slowdown. The function keeps calculating while new pairs are slowly moved through memory. This is not a clear compute-bound rather a mix of both. 
-Whereas the roofline and CNOT gate are purely memory bound at 24 qubits.
+In both methods we pull the same number of cache lines, have the same traffic and pay the same total DRAM tax. The roofline spreads this tax over four iterations per line (one amplitude each), CNOT over two (one pair each, one of them skipped), so the per-iteration tax reads 2x.
+Interestingly the single-qubit gate only increases by +4.32, the long calculations are able to hide the memory slowdown. The function keeps calculating while new pairs are slowly moved through memory. This is not a clear compute-bound but a mix of both, whereas the roofline and CNOT gate are purely memory bound at 24 qubits.
 
 
 
