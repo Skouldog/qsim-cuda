@@ -5,18 +5,18 @@ jobs:
         runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@v4
-        - run: cmake -B build
-        - run: cmake --build build
-        - run: ctest --test-dir build --output-on-failure
+        - run: cmake --preset debug
+        - run: cmake --build --preset debug
+        - run: ctest --preset debug
     coverage:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
             - run: pip install gcovr
-            - run: cmake -B build -DQSIM_COVERAGE=ON
-            - run: cmake --build build
-            - run: ctest --test-dir build
-            - run: gcovr --root . --filter src/ --filter include/ --cobertura coverage.xml build
+            - run: cmake --preset coverage
+            - run: cmake --build --preset coverage
+            - run: ctest --preset coverage
+            - run: gcovr --root . --filter src/ --filter include/ --cobertura coverage.xml build/coverage
             - uses: codecov/codecov-action@v5
               with:
                 token: ${{ secrets.CODECOV_TOKEN }}
@@ -24,7 +24,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@v4
-        - run: cmake -B build -DQSIM_BENCHMARK=ON -DCMAKE_BUILD_TYPE=Release
-        - run: cmake --build build --target qsim_bench
-        - run: ./build/qsim_bench --benchmark_list_tests=true 
+        - run: cmake --preset benchmark
+        - run: cmake --build --preset benchmark --target qsim_bench
+        - run: ./build/benchmark/qsim_bench --benchmark_list_tests=true
 
