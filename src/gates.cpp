@@ -46,25 +46,6 @@ Matrix2 rz(double angle) {
 }  // namespace gates
 
 /**
- *
- * @brief Helper: Calculate new pair of Amplitudes
- * @param 2x2 Matrix and amplitude pair to be calculated
- * @return  pair of new amplitudes
- */
-std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes(
-    const Matrix2& matrix,
-    std::pair<std::complex<double>, std::complex<double>> pairAmpOld) {
-  std::pair<std::complex<double>, std::complex<double>> pairAmpNew;
-
-  pairAmpNew.first =
-      matrix[0][0] * pairAmpOld.first + matrix[0][1] * pairAmpOld.second;
-  pairAmpNew.second =
-      matrix[1][0] * pairAmpOld.first + matrix[1][1] * pairAmpOld.second;
-
-  return pairAmpNew;
-}
-
-/**
  *@brief applies 2x2 Matrix to Qubit
  *@param State Vector by reference, chosen qubit and 2x2 matrix to be
  * calculated with
@@ -78,7 +59,7 @@ void applySingleQubitGate(qsim::VectorState& state, int qubit,
   for (std::size_t pairNumber = 0; pairNumber < state.getSize() / 2;
        pairNumber++) {
     std::pair<std::size_t, std::size_t> pairIndices =
-        getPairIndices(pairNumber, qubit);
+        qsim::detail::getPairIndices(pairNumber, qubit);
 
     std::pair<std::complex<double>, std::complex<double>> pairAmplitudes;
 
@@ -86,7 +67,7 @@ void applySingleQubitGate(qsim::VectorState& state, int qubit,
     pairAmplitudes.first = ptrAmps[pairIndices.first];
     pairAmplitudes.second = ptrAmps[pairIndices.second];
 
-    pairAmplitudes = calculateAmplitudes(matrix, pairAmplitudes);
+    pairAmplitudes = qsim::detail::calculateAmplitudes(matrix, pairAmplitudes);
 
     // write back to state
     ptrAmps[pairIndices.first] = pairAmplitudes.first;
@@ -105,7 +86,7 @@ void applyCnotGate(qsim::VectorState& state, int controlBit, int targetBit) {
   for (std::size_t pairNumber = 0; pairNumber < state.getSize() / 2;
        pairNumber++) {
     std::pair<std::size_t, std::size_t> pairIndices =
-        getPairIndices(pairNumber, targetBit);
+        qsim::detail::getPairIndices(pairNumber, targetBit);
 
     if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
       std::complex<double> temp = ptrAmps[pairIndices.second];
@@ -113,6 +94,27 @@ void applyCnotGate(qsim::VectorState& state, int controlBit, int targetBit) {
       ptrAmps[pairIndices.first] = temp;
     }
   }
+}
+
+namespace detail {
+
+/**
+ *
+ * @brief Helper: Calculate new pair of Amplitudes
+ * @param 2x2 Matrix and amplitude pair to be calculated
+ * @return  pair of new amplitudes
+ */
+std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes(
+    const Matrix2& matrix,
+    std::pair<std::complex<double>, std::complex<double>> pairAmpOld) {
+  std::pair<std::complex<double>, std::complex<double>> pairAmpNew;
+
+  pairAmpNew.first =
+      matrix[0][0] * pairAmpOld.first + matrix[0][1] * pairAmpOld.second;
+  pairAmpNew.second =
+      matrix[1][0] * pairAmpOld.first + matrix[1][1] * pairAmpOld.second;
+
+  return pairAmpNew;
 }
 
 /**
@@ -136,5 +138,7 @@ std::pair<std::size_t, std::size_t> getPairIndices(std::size_t pairNumber,
   std::pair<std::size_t, std::size_t> pairIndices = {pair0Index, pair1Index};
   return pairIndices;
 }
+
+}  // namespace detail
 
 }  // namespace qsim

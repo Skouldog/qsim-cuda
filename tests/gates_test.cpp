@@ -30,8 +30,6 @@ TEST(HGate, CreatesSuperposition) {
 TEST(HGate, AppliedTwiceIsIdentity) {
   qsim::VectorState state(1);
 
-  const double s = 1.0 / std::sqrt(2.0);
-
   qsim::applySingleQubitGate(state, 0, qsim::gates::h());
   qsim::applySingleQubitGate(state, 0, qsim::gates::h());
 
@@ -173,7 +171,7 @@ TEST(GetPairIndices, FirstPair) {
   std::pair<std::size_t, size_t> gotPair;
   std::pair<std::size_t, size_t> wantPair;
 
-  gotPair = qsim::getPairIndices(0, 0);
+  gotPair = qsim::detail::getPairIndices(0, 0);
   wantPair = {0, 1};
   comparePairs(gotPair, wantPair);
 }
@@ -181,7 +179,7 @@ TEST(GetPairIndices, BorderPair) {
   std::pair<std::size_t, size_t> gotPair;
   std::pair<std::size_t, size_t> wantPair;
 
-  gotPair = qsim::getPairIndices(0, 34);
+  gotPair = qsim::detail::getPairIndices(0, 34);
   wantPair = {0, std::size_t{1} << 34};
   comparePairs(gotPair, wantPair);
 }
@@ -189,7 +187,7 @@ TEST(GetPairIndices, InTheMiddle) {
   std::pair<std::size_t, size_t> gotPair;
   std::pair<std::size_t, size_t> wantPair;
 
-  gotPair = qsim::getPairIndices(7, 2);
+  gotPair = qsim::detail::getPairIndices(7, 2);
   wantPair = {11, 15};
   comparePairs(gotPair, wantPair);
 }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.25)
 
 
 
@@ -6,6 +6,7 @@ project(qsim-cuda LANGUAGES CXX)
 
 option(QSIM_USE_CUDA "Build with CUDA backend" OFF)
 option(QSIM_COVERAGE "Enable coverage instrumentation" OFF)
+option(QSIM_BENCHMARK "Build benchmarks" OFF)
 
 
 set(CMAKE_CXX_STANDARD 20)
@@ -22,10 +23,33 @@ FetchContent_Declare(
   json
   URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
 )
+
+if(QSIM_BENCHMARK)
+  FetchContent_Declare(
+    googlebenchmark
+        URL https://github.com/google/benchmark/archive/refs/tags/v1.9.2.zip )
+  set(BENCHMARK_ENABLE_TESTING OFF)
+  set(BENCHMARK_ENABLE_INSTALL OFF)
+  set(BENCHMARK_ENABLE_WERROR OFF)
+  FetchContent_MakeAvailable(googlebenchmark)
+  
+  add_custom_target(bench
+    COMMAND taskset -c 3 $<TARGET_FILE:qsim_bench>
+            --benchmark_repetitions=5
+            --benchmark_report_aggregates_only=true
+            --benchmark_out_format=json
+            --benchmark_out=${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/results/latest.json
+    COMMENT "Running benchmarks -> benchmarks/results/latest.json"
+    VERBATIM)
+  add_dependencies(bench qsim_bench)
+endif()
+
+
 FetchContent_MakeAvailable(googletest json)
 
 add_library(qsim_core src/state.cpp src/gates.cpp src/circuit.cpp src/operation.cpp)
 target_include_directories(qsim_core PUBLIC include)
+target_compile_options(qsim_core PRIVATE -Wall -Wextra)
 
 if(QSIM_USE_CUDA)
     enable_language(CUDA)
@@ -40,7 +64,7 @@ endif()
 
 add_executable(qsim_cli src/main.cpp)
 target_link_libraries(qsim_cli PRIVATE qsim_core)
-
+target_compile_options(qsim_cli PRIVATE -Wall -Wextra)
 
 
 add_executable(qsim_tests  
@@ -52,12 +76,15 @@ tests/circuit_by_reference_test.cpp
 )
 
 target_compile_definitions(qsim_tests PRIVATE TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/scripts/")
+target_compile_options(qsim_tests PRIVATE -Wall -Wextra)
 
 target_link_libraries(qsim_tests PRIVATE qsim_core GTest::gtest_main nlohmann_json::nlohmann_json)
 
-add_executable(qsim_bench benchmarks/main.cpp)
-target_link_libraries(qsim_bench PRIVATE qsim_core)
-
+if(QSIM_BENCHMARK)
+  add_executable(qsim_bench benchmarks/gate_bench.cpp benchmarks/circuit_bench.cpp benchmarks/roofline_bench.cpp)
+  target_compile_options(qsim_bench PRIVATE -Wall -Wextra)
+  target_link_libraries(qsim_bench PRIVATE qsim_core benchmark::benchmark_main)
+endif()
 
 
 enable_testing()

@@ -14,9 +14,6 @@ void applySingleQubitGate(qsim::VectorState& state, int qubit,
 
 void applyCnotGate(qsim::VectorState& state, int controlBit, int targetBit);
 
-std::pair<std::size_t, std::size_t> getPairIndices(std::size_t pairNumber,
-                                                   int qubit);
-
 namespace gates {
 Matrix2 h();
 Matrix2 x();
@@ -25,4 +22,14 @@ Matrix2 z();
 Matrix2 t();
 Matrix2 rz(double angle);
 }  // namespace gates
+namespace detail {
+
+std::pair<std::size_t, std::size_t> getPairIndices(std::size_t pairNumber,
+                                                   int qubit);
+
+std::pair<std::complex<double>, std::complex<double>> calculateAmplitudes(
+    const Matrix2& matrix,
+    std::pair<std::complex<double>, std::complex<double>> pairAmpOld);
+}  // namespace detail
+
 }  // namespace qsim
