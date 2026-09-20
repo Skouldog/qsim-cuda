@@ -55,7 +55,8 @@ void applySingleQubitGate(qsim::VectorState& state, int qubit,
                           const Matrix2& matrix) {
   std::complex<double>* ptrAmps = state.data();
 
-  // Iterate through each pair
+
+#pragma omp parallel for
   for (std::size_t pairNumber = 0; pairNumber < state.getSize() / 2;
        pairNumber++) {
     std::pair<std::size_t, std::size_t> pairIndices =
@@ -83,6 +84,7 @@ void applyCnotGate(qsim::VectorState& state, int controlBit, int targetBit) {
   assert(controlBit != targetBit);
   std::complex<double>* ptrAmps = state.data();
 
+#pragma omp parallel for
   for (std::size_t pairNumber = 0; pairNumber < state.getSize() / 2;
        pairNumber++) {
     std::pair<std::size_t, std::size_t> pairIndices =

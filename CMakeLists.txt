@@ -34,7 +34,7 @@ if(QSIM_BENCHMARK)
   FetchContent_MakeAvailable(googlebenchmark)
   
   add_custom_target(bench
-    COMMAND taskset -c 3 $<TARGET_FILE:qsim_bench>
+    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=4 taskset -c 0-3 $<TARGET_FILE:qsim_bench>
             --benchmark_repetitions=5
             --benchmark_report_aggregates_only=true
             --benchmark_out_format=json
@@ -50,6 +50,10 @@ FetchContent_MakeAvailable(googletest json)
 add_library(qsim_core src/state.cpp src/gates.cpp src/circuit.cpp src/operation.cpp)
 target_include_directories(qsim_core PUBLIC include)
 target_compile_options(qsim_core PRIVATE -Wall -Wextra)
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(qsim_core PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 if(QSIM_USE_CUDA)
     enable_language(CUDA)

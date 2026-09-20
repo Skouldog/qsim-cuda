@@ -13,6 +13,7 @@ static void BM_roofline(benchmark::State& state) {
   const size_t stateSize = qState.getSize();
 
   for (auto _ : state) {
+#pragma omp parallel for
     for (size_t index = 0; index < stateSize; index++) {
       amps[index] = amps[index] * factor;
     }
