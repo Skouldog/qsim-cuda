@@ -23,4 +23,8 @@ static void BM_roofline(benchmark::State& state) {
   state.SetComplexityN(nAmps);
   state.SetItemsProcessed(state.iterations() * nAmps);
 }
-BENCHMARK(BM_roofline)->DenseRange(2, 24)->ArgName("qubits")->Complexity();
+BENCHMARK(BM_roofline)
+    ->DenseRange(2, 24)
+    ->UseRealTime()
+    ->ArgName("qubits")
+    ->Complexity();
