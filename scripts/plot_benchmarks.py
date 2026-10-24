@@ -132,9 +132,14 @@ def label_for(family, col):
 # parsing
 # --------------------------------------------------------------------------
 
+# Tags google/benchmark appends to a run name by itself when a benchmark is
+# registered with UseRealTime(), MeasureProcessCPUTime() or UseManualTime().
+# They say which clock was used, not which arguments, so the parser skips them.
+TIME_TAGS = ("real_time", "process_time", "manual_time")
+
 
 def parse_run_name(run_name):
-    """'BM_foo/qubits:3/k:8' -> ('BM_foo', OrderedDict(qubits=3, k=8)).
+    """'BM_foo/qubits:3/k:8/real_time' -> ('BM_foo', OrderedDict(qubits=3, k=8)).
 
     Argument labels come from ArgName()/ArgNames() on the C++ side, so they
     may contain spaces; only the final colon separates label from value.
@@ -142,6 +147,8 @@ def parse_run_name(run_name):
     family, *arg_parts = run_name.split("/")
     args = OrderedDict()
     for part in arg_parts:
+        if part in TIME_TAGS:
+            continue
         label, _, value = part.rpartition(":")
         if not label:  # benchmark had no ArgName()
             label, value = "arg%d" % len(args), part
@@ -151,7 +158,6 @@ def parse_run_name(run_name):
         except ValueError:
             args[label] = value
     return family, args
-
 
 def load(path):
     """Return (context, families)."""
