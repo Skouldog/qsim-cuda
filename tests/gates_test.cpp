@@ -191,3 +191,36 @@ TEST(GetPairIndices, InTheMiddle) {
   wantPair = {11, 15};
   comparePairs(gotPair, wantPair);
 }
+
+TEST(MultiThread, HGateSuperposition) {
+  const int qubits = 18;
+  qsim::VectorState state(qubits);
+  std::vector<std::complex<double>> want(std::size_t{1} << qubits);
+  for (std::size_t amp = 0; amp < (std::size_t{1} << qubits); amp++) {
+    want[amp] = {1.0 / std::sqrt(std::size_t{1} << qubits), 0};
+  }
+
+  for (int qubit = 0; qubit < qubits; qubit++) {
+    qsim::applySingleQubitGate(state, qubit, qsim::gates::h());
+  }
+
+  compareStates(state, want, kTol);
+}
+
+TEST(MultiThread, CnotGateCreatesGhzState) {
+  const int qubits = 18;
+  qsim::VectorState state(qubits);
+  const std::size_t indices = std::size_t{1} << qubits;
+  std::vector<std::complex<double>> want(indices);
+  const double s = 1.0 / std::sqrt(2.0);
+  want.at(0) = {s, 0};
+  want.at(indices - 1) = {s, 0};
+
+  qsim::applySingleQubitGate(state, 0, qsim::gates::h());
+
+  for (int i = 0; i < qubits - 1; i++) {
+    qsim::applyCnotGate(state, i, i + 1);
+  }
+
+  compareStates(state, want, kTol);
+}
