@@ -33,6 +33,7 @@ This log will document every benchmark run. It acts as a basis for further optim
     - [Small states](#small-states)
   - [Eco cores](#eco-cores)
   - [Guard Clause](#guard-clause)
+- [2026-10-28 - CPU OpenMP with guard clause](#2026-10-28---cpu-openmp-with-guard-clause)
 
 
 
@@ -667,3 +668,26 @@ We saw that the multi-core implementation is very beneficial for bigger states b
 
 As we can see the multi-threading pays off from qubits 14 and 17 respectively. 
 Since we are mainly interested in big states, the guard does not matter too much. And we will set it in the middle at 15 qubits, slightly favoring the more complex SingleQubit Function.
+
+
+
+## 2026-10-28 - CPU OpenMP with guard clause
+
+git sha: 1225ef15b5aebbcbb9b99c5afb125469e439b446
+
+All numbers can be found in [numbers.md](../benchmarks/results/2026-10-28-cpu-openmp-guard/numbers.md).
+
+This setup will be our baseline for our future CUDA implementation. 
+We do not pin any CPU cores anymore, which gives us the same setup as our OpenMP (4p + 4e) benchmark with the addition of a guard clause for lower qubits. 
+
+| qubits         | SingleQubitGate (ns/iter) | CNOT (ns/iter) |
+| -------------- | ------------------------- | -------------- |
+| 14 (1 thread)  | 2.940                     | 0.547          |
+| 18 (8 threads) | 0.669                     | 0.223          |
+| 24 (8 threads) | 0.896                     | 0.762          |
+
+Notes: 
+- We use multithreading from qubits 15 onwards. This makes our CNOT gate at 15 qubits slower than our single core implementation. We accept this tradeoff to have a clear threshold for all functions.
+- Our multi-thread rows are noisier than the single-thread benchmarks, reaching up to 11% cv for our two gates. We suspect the laptop's power and thermal limits for this. 
+
+
