@@ -34,7 +34,7 @@ if(QSIM_BENCHMARK)
   FetchContent_MakeAvailable(googlebenchmark)
   
   add_custom_target(bench
-    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=4 taskset -c 0-3 $<TARGET_FILE:qsim_bench>
+    COMMAND $<TARGET_FILE:qsim_bench>
             --benchmark_repetitions=5
             --benchmark_report_aggregates_only=true
             --benchmark_out_format=json
