@@ -14,6 +14,7 @@
 // Possible additions:  CZ, SWAP, Toffoli, controlled Rotation CR(θ)
 
 namespace qsim {
+
 namespace gates {
 Matrix2 h() {
   const double s = 1.0 / std::sqrt(2.0);
@@ -55,7 +56,7 @@ void applySingleQubitGate(qsim::VectorState& state, int qubit,
                           const Matrix2& matrix) {
   std::complex<double>* ptrAmps = state.data();
 
-  // Iterate through each pair
+#pragma omp parallel for if (state.getQubitSize() >= kMultiThreadThreshold)
   for (std::size_t pairNumber = 0; pairNumber < state.getSize() / 2;
        pairNumber++) {
     std::pair<std::size_t, std::size_t> pairIndices =
@@ -83,6 +84,7 @@ void applyCnotGate(qsim::VectorState& state, int controlBit, int targetBit) {
   assert(controlBit != targetBit);
   std::complex<double>* ptrAmps = state.data();
 
+#pragma omp parallel for if (state.getQubitSize() >= kMultiThreadThreshold)
   for (std::size_t pairNumber = 0; pairNumber < state.getSize() / 2;
        pairNumber++) {
     std::pair<std::size_t, std::size_t> pairIndices =

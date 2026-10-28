@@ -28,6 +28,12 @@ This log will document every benchmark run. It acts as a basis for further optim
     - [Improving Methodology](#improving-methodology)
   - [Reproduction of this Benchmark](#reproduction-of-this-benchmark)
     - [What has to match for the numbers to be comparable](#what-has-to-match-for-the-numbers-to-be-comparable)
+- [2026-10-23 - CPU OpenMP Sweep](#2026-10-23---cpu-openmp-sweep)
+  - [Increasing number of performance cores](#increasing-number-of-performance-cores)
+    - [Small states](#small-states)
+  - [Eco cores](#eco-cores)
+  - [Guard Clause](#guard-clause)
+- [2026-10-28 - CPU OpenMP with guard clause](#2026-10-28---cpu-openmp-with-guard-clause)
 
 
 
@@ -484,3 +490,204 @@ The rest of this run: 5 repetitions, aggregates only, Release (-O3 -DNDEBUG),
 g++ 15.2.0, google/benchmark v1.9.2, and cpu_scaling_enabled was true (median CV
 0.41%, which does not move the numbers materially). The `context` block inside
 `results.json` next to the plots is the authoritative record — host, date, and cache sizes all come from there, not from this document.
+
+
+
+
+## 2026-10-23 - CPU OpenMP Sweep
+
+git sha: 1d9b80b9798afe3c52b3bb668eaf2f753161b099
+
+
+
+The purpose of this benchmark is to see the performance gains by using a multicore approach. 
+We use the OpenMP compiler directives to enable multi-threading. 
+All benchmark results can be found in the [sweep folder](../benchmarks/results/2026-10-23-cpu-openmp-sweep-new) of each respective benchmark.
+
+Since our setup has performance as well as eco cores we will test those constellations:
+
+- one performance core
+- two performance cores
+- three performance cores
+- four performance cores
+- four eco cores
+- two performance cores and two eco cores
+- four performance cores and four eco cores
+
+
+Notice: Our original sweep benchmark had faulty numbers. Google Benchmark measured our throughput with the help of `cpu_time`. This worked for our single-threaded runs but inflates our numbers for our multi-core runs. `cpu_time` measures only the active time of our main thread. As soon as the main thread finishes its parts of the arithmetic, the time measurement stops and neglects the other threads still working. 
+In order to avoid this we have to use `real_time` which measures the whole time until the whole function gets finished. 
+
+Faulty Run: git sha: fa8db91097f11d8dc25b4fac7d114ae88b5cd4fd
+
+
+
+
+
+### Increasing number of performance cores
+
+Theory: 
+Using multiple cores should give us more performance. I do not think the increase will be linear, since there are more factors than raw compute power, but we should be able to see a clear increase in power which approaches a linear increase. 
+
+
+**Apply SingleQubitGate**:
+
+
+| Number of cores         | 8 qubit-state                   | 18 qubit-state                  | 24 qubit-state                  |
+| ----------------------- | ------------------------------- | ------------------------------- | ------------------------------- |
+| one performance core    | 14.6857 GB/s <br> 4.358 ns/iter | 19.7750 GB/s <br> 3.236 ns/iter | 15.4060 GB/s <br> 4.154 ns/iter |
+| two performance cores   | 2.1119 GB/s <br> 30.304 ns/iter | 37.9854 GB/s <br> 1.685 ns/iter | 29.1361 GB/s <br> 2.197 ns/iter |
+| three performance cores | 1.7704 GB/s <br> 36.149 ns/iter | 50.8766 GB/s <br> 1.258 ns/iter | 37.6911 GB/s <br> 1.698 ns/iter |
+| four performance cores  | 1.6405 GB/s <br> 39.014 ns/iter | 64.8104 GB/s <br> 0.987 ns/iter | 46.3677 GB/s <br> 1.380 ns/iter |
+
+
+
+Observation: 
+In the smaller qubit state we see a decline in performance with increasing cores. Only once we reach bigger states can we see a performance increase. 
+For our 18 qubit-state we see a **1.92x** performance boost going from one core to two cores. Respectively **2.57x** for three cores, **3.27x** for four cores. 
+For our 24 qubit-state we see slightly worse performance gains, **1.89x, 2.45x, 3.01x.**
+Doubling our cores does not provide us with a doubled performance gain, this is especially noteworthy for the jump from 2 cores to 4 cores, which only provides a 1.59x increase in performance (24 qubits).
+
+
+Explanation: 
+Although a perfectly linear increase was never expected those number increases seem underwhelming. 
+Parts of it will stem from the fact that the CPU has to manage multiple threads, which in itself will draw on the performance. This would explain parts of the diminishing performance gains with increasing cores. The added complexity draws on the performance gains which we will have to investigate further. 
+The numbers also hint at another explanation. We can see that with a bigger state our performance gains diminish even further. Our added threads provide us with more compute power but the bandwidth we can fill flattens. Increasing the cores provides us with more compute power but makes the memory bound more apparent, hence the slow-down in performance gain. Since the 24 qubit-state needs even more memory, this effect gets even worse.
+
+Since the SingleQubitGate is very arithmetic bound we will now look at the CNOT Gate. Here we should see even worse performance gains, since the CNOT Gate is more memory demanding than compute demanding.
+
+
+
+**Apply CNOT-Gate**
+
+| Number of cores         | 8 qubit-state                   | 18 qubit-state                   | 24 qubit-state                  |
+| ----------------------- | ------------------------------- | -------------------------------- | ------------------------------- |
+| one performance core    | 18.6484 GB/s <br> 1.716 ns/iter | 37.1133 GB/s <br> 0.862 ns/iter  | 16.7326 GB/s <br> 1.912 ns/iter |
+| two performance cores   | 1.0296 GB/s <br> 31.081 ns/iter | 81.6128 GB/s <br> 0.392 ns/iter  | 28.4534 GB/s <br> 1.125 ns/iter |
+| three performance cores | 0.9394 GB/s <br> 34.063 ns/iter | 111.6678 GB/s <br> 0.287 ns/iter | 36.0049 GB/s <br> 0.889 ns/iter |
+| four performance cores  | 0.7992 GB/s <br> 40.038 ns/iter | 131.8070 GB/s <br> 0.243 ns/iter | 41.3781 GB/s <br> 0.773 ns/iter |
+
+Observation: 
+As in the previous table the lower qubit-state performances are decreasing with multiple cores. 
+
+The performance gains for the 18 qubit-state are as follows:
+**2.2x, 3.0x, 3.55x**
+
+The change from 1 to 2 cores is especially noteworthy since it's superlinear. 
+
+While the 24 qubit-state gains are:
+**1.7x, 2.15x, 2.47x**
+
+
+Explanation: 
+Let's first look at the 24 qubit-state since it conforms with our earlier theory. We can see a clear decrease in performance gains compared to the SingleQubitGates. 
+The 18 qubit-state does not directly follow our theory, we actually see an increase in performance gains. 
+
+If we remember our earlier section the big difference is the memory location for both vectors. The 18 qubit-state was mainly stored in our L3 Cache while the bigger 24 qubit-state was in DRAM. 
+
+Each core has 2.5MiB L2 Cache, originally our 18 qubit-state which is 4MiB big was not able to fit in our L2 cache. Now the state can be split into two 2MiB blocks and fits into our L2 caches.
+This would explain the superlinear increase in performance. We don't rely on L3 cache anymore.
+
+Looking quickly at our single core performance for 17 and 18 qubit-states:
+
+| one core         | 17 qubit-state (L2) | 18 qubit-state  (L3) | change     |
+| ---------------- | ------------------- | -------------------- | ---------- |
+| CNOT             | 0.695 ns/iter       | 0.862 ns/iter        | 24% slower |
+| ApplySingleQubit | 3.212 ns/iter       | 3.236 ns/iter        | under 1%   |
+
+CNOT got heavily penalized for having its state moved to L3 cache. It had to wait for data, this waiting has been resolved with the extra L2 Cache memory. 
+Our arithmetic heavy SingleQubit operation, was always compute-bound in cache, so it did not benefit from our new memory location, it only benefited from the extra worker for the arithmetic.
+
+#### Small states
+
+Before we continue let's have a look at the graph for our SingleQubit Gate with four performance cores.
+
+
+
+![Single Qubit, Four p_cores](../benchmarks/results/2026-10-23-cpu-openmp-sweep-new/2026-10-23-cpu-openmp-new-p4/BM_applySingleQubitGate.png)
+
+We see extreme performance drops for small states. 
+This does not have much to do with our L1, L2 Caches and where the state is being stored. This is more due to the steep call-cost of OpenMP and complexity of our multi threading.
+
+To explain this let's look at the time per call for each of our two functions
+
+ns/iter gives us the time for one iteration. Let's look at the total call time.
+
+
+| 8 qubits         | one core                         | two cores                  | extra time |
+| ---------------- | -------------------------------- | -------------------------- | ---------- |
+| CNOT             | 1.716 ns/iter * 128 = 219.65 ns  | 31.081 *128 = 3978.37 ns   | 3758.72 ns |
+| ApplySingleQubit | 4.358 ns/iter *128 =   557.82 ns | 30.304  *128 =  3878.91 ns | 3321.09 ns |
+
+
+For one core the two operations have very different times 0.22 µs vs 0.56 µs. For two cores they nearly take the same time 3.98 µs and 3.88 µs. This suggests that the OpenMP fork/join overhead is causing the slowdown – suggesting a fixed cost per call.
+
+For bigger states this fixed cost becomes negligible. So one educated guess for the non linear performance gain would be changed frequency. The runs do not record the frequency but since the benchmarks are done on a Laptop CPU the cores slow down their clock speed with increased number of cores. This slower clock speed taxes our execution speeds.
+
+
+
+### Eco cores
+
+Now we will briefly look at the ns/iter for the various constellations of performance cores and eco cores.
+
+| config                 | SingleQubit 18q | SingleQubit 24q | CNOT 18q | CNOT 24q |
+| ---------------------- | --------------- | --------------- | -------- | -------- |
+| four performance cores | 0.987           | 1.380           | 0.243    | 0.773    |
+| four eco cores         | 1.075           | 1.077           | 0.471    | 0.996    |
+| two P + two E          | 1.194           | 1.236           | 0.428    | 0.808    |
+| four P + four E        | 0.777           | 0.995           | 0.372    | 0.765    |
+
+
+Observation: 
+
+Four eco cores beat four performance cores for the SingleQubit operation with 24 qubits. This seems very unintuitive and my only guess would be that the CPU uses less power and generates less heat with the eco cores. It does not have to slow down its clock speeds. The four performance cores under full load might trigger thermal throttling / power limits which could compromise clock speeds. 
+
+Mixing cores does not add up either. Four eco cores beat a mix of 2 eco and 2 performance cores for our SingleQubit function.
+
+Four performance cores and four eco cores beat all tested constellations for the 24 qubit state. 
+
+Conclusion: 
+We will use the all core setup for later comparison against our GPU implementation. This seems fairest. The only thing we need to have a look is the low performance for small states.
+
+
+### Guard Clause
+
+We saw that the multi-core implementation is very beneficial for bigger states but struggles to keep up in smaller states. To combat this we will implement a guard clause which forces our program to use a single core for smaller states and only uses multi-threading once it pays off.
+
+| qubits                            | SingleQubitGate (ns/iter)                                               | CNOT (ns/iter)                                                          |
+| --------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 12                                | 1 core: $\color{#6aa577}{3.276}$ <br> 8 cores: $\color{#c98282}{6.608}$ | 1 core: $\color{#6aa577}{0.704}$ <br> 8 cores: $\color{#c98282}{6.869}$ |
+| 13                                | 1 core: $\color{#6aa577}{3.256}$ <br> 8 cores: $\color{#c98282}{3.731}$ | 1 core: $\color{#6aa577}{0.665}$ <br> 8 cores: $\color{#c98282}{3.844}$ |
+| 14                                | 1 core: $\color{#c98282}{3.238}$ <br> 8 cores: $\color{#6aa577}{2.218}$ | 1 core: $\color{#6aa577}{0.653}$ <br> 8 cores: $\color{#c98282}{2.033}$ |
+| 15                                | 1 core: $\color{#c98282}{3.265}$ <br> 8 cores: $\color{#6aa577}{1.337}$ | 1 core: $\color{#6aa577}{0.644}$ <br> 8 cores: $\color{#c98282}{1.072}$ |
+| 16                                | 1 core: $\color{#c98282}{3.199}$ <br> 8 cores: $\color{#6aa577}{1.028}$ | 1 core: 0.633 <br> 8 cores: 0.633 (tie)                                 |
+| 17                                | 1 core: $\color{#c98282}{3.212}$ <br> 8 cores: $\color{#6aa577}{0.863}$ | 1 core: $\color{#c98282}{0.695}$ <br> 8 cores: $\color{#6aa577}{0.468}$ |
+| 18                                | 1 core: $\color{#c98282}{3.236}$ <br> 8 cores: $\color{#6aa577}{0.777}$ | 1 core: $\color{#c98282}{0.862}$ <br> 8 cores: $\color{#6aa577}{0.372}$ |
+| **multi-threading pays off from** | **14 qubits**                                                           | **17 qubits**                                                           |
+
+
+As we can see the multi-threading pays off from qubits 14 and 17 respectively. 
+Since we are mainly interested in big states, the guard does not matter too much. And we will set it in the middle at 15 qubits, slightly favoring the more complex SingleQubit Function.
+
+
+
+## 2026-10-28 - CPU OpenMP with guard clause
+
+git sha: 1225ef15b5aebbcbb9b99c5afb125469e439b446
+
+All numbers can be found in [numbers.md](../benchmarks/results/2026-10-28-cpu-openmp-guard/numbers.md).
+
+This setup will be our baseline for our future CUDA implementation. 
+We do not pin any CPU cores anymore, which gives us the same setup as our OpenMP (4p + 4e) benchmark with the addition of a guard clause for lower qubits. 
+
+| qubits         | SingleQubitGate (ns/iter) | CNOT (ns/iter) |
+| -------------- | ------------------------- | -------------- |
+| 14 (1 thread)  | 2.940                     | 0.547          |
+| 18 (8 threads) | 0.669                     | 0.223          |
+| 24 (8 threads) | 0.896                     | 0.762          |
+
+Notes: 
+- We use multithreading from qubits 15 onwards. This makes our CNOT gate at 15 qubits slower than our single core implementation. We accept this tradeoff to have a clear threshold for all functions.
+- Our multi-thread rows are noisier than the single-thread benchmarks, reaching up to 11% cv for our two gates. We suspect the laptop's power and thermal limits for this. 
+
+

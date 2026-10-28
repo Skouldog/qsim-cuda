@@ -2,6 +2,7 @@
 
 #include <complex>
 
+#include "qsim/gates.hpp"
 #include "qsim/state.hpp"
 
 static void BM_roofline(benchmark::State& state) {
@@ -13,6 +14,7 @@ static void BM_roofline(benchmark::State& state) {
   const size_t stateSize = qState.getSize();
 
   for (auto _ : state) {
+#pragma omp parallel for if (qState.getQubitSize() >= qsim::kMultiThreadThreshold)
     for (size_t index = 0; index < stateSize; index++) {
       amps[index] = amps[index] * factor;
     }
@@ -22,4 +24,8 @@ static void BM_roofline(benchmark::State& state) {
   state.SetComplexityN(nAmps);
   state.SetItemsProcessed(state.iterations() * nAmps);
 }
-BENCHMARK(BM_roofline)->DenseRange(2, 24)->ArgName("qubits")->Complexity();
+BENCHMARK(BM_roofline)
+    ->DenseRange(2, 24)
+    ->UseRealTime()
+    ->ArgName("qubits")
+    ->Complexity();

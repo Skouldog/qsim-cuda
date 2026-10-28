@@ -22,4 +22,8 @@ static void BM_ghzState(benchmark::State& state) {
   state.SetItemsProcessed(state.iterations() *
                           (nAmps + (qubits - 1) * nAmps / 2));
 }
-BENCHMARK(BM_ghzState)->DenseRange(2, 24)->ArgName("qubits")->Complexity();
+BENCHMARK(BM_ghzState)
+    ->DenseRange(2, 24)
+    ->UseRealTime()
+    ->ArgName("qubits")
+    ->Complexity();
