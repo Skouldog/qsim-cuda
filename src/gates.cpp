@@ -15,7 +15,6 @@
 
 namespace qsim {
 
-constexpr int kMultiThreadThreshold = 15;  // inclusive
 namespace gates {
 Matrix2 h() {
   const double s = 1.0 / std::sqrt(2.0);

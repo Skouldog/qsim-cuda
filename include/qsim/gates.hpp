@@ -7,6 +7,9 @@
 #include "qsim/state.hpp"
 
 namespace qsim {
+
+constexpr int kMultiThreadThreshold = 15;  // inclusive
+
 using Matrix2 = std::array<std::array<std::complex<double>, 2>, 2>;
 
 void applySingleQubitGate(qsim::VectorState& state, int qubit,
