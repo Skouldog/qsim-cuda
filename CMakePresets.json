@@ -18,6 +18,15 @@
             }
         },
         {
+            "name": "cuda",
+            "displayName": "cuda",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "QSIM_USE_CUDA": "ON"
+            }
+        },
+        {
             "name": "release",
             "displayName": "Release",
             "inherits": "base",
@@ -48,6 +57,10 @@
         {
             "name": "debug",
             "configurePreset": "debug"
+        },
+        {
+            "name": "cuda",
+            "configurePreset": "cuda"
         },
         {
             "name": "release",

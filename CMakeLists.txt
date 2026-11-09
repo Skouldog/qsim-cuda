@@ -59,6 +59,7 @@ if(QSIM_USE_CUDA)
     enable_language(CUDA)
     target_compile_definitions(qsim_core PUBLIC QSIM_USE_CUDA)
     # toDO add CU files
+    target_sources(qsim_core PRIVATE src/gpu/gates.cu)
 endif()
 
 if(QSIM_COVERAGE)
