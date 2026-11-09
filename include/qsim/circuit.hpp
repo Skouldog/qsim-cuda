@@ -18,6 +18,9 @@ class Circuit {
   void addCnot(int controlBit, int targetBit);
 
   void run(qsim::VectorState& state);
+#ifdef QSIM_USE_CUDA
+  void runGpu(qsim::VectorState& state);
+#endif
 
  private:
   std::list<std::unique_ptr<qsim::Operation>> circuitList;

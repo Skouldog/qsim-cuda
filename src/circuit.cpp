@@ -22,4 +22,16 @@ void Circuit::run(qsim::VectorState& state) {
   }
 };
 
+ #ifdef QSIM_USE_CUDA
+void Circuit::runGpu(qsim::VectorState& state) {
+  for (const std::unique_ptr<Operation>& ptrOp : circuitList) {
+
+    // Copy
+    double* devPtr = nullptr;
+    ptrOp->applyGpu(state, devPtr);
+    // copy
+  }
+};
+#endif
+
 }  // namespace qsim

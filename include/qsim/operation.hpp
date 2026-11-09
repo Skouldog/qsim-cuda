@@ -10,6 +10,9 @@ namespace qsim {
 class Operation {
  public:
   virtual void apply(VectorState& state) const = 0;
+#ifdef QSIM_USE_CUDA
+  virtual void applyGpu(VectorState& state, double* devPtr) const = 0;
+#endif
   virtual ~Operation() {};
 };
 
@@ -18,7 +21,9 @@ class SingleQubitGate : public Operation {
   SingleQubitGate(qsim::Matrix2 matrix, int qubit)
       : matrix(matrix), qubit(qubit) {};
   void apply(VectorState& state) const override;
-
+#ifdef QSIM_USE_CUDA
+  void applyGpu(VectorState& state, double* devPtr) const override;
+#endif
  private:
   qsim::Matrix2 matrix;
   int qubit;
@@ -30,9 +35,12 @@ class CnotGate : public Operation {
       : controlBit(controlBit), targetBit(targetBit) {};
 
   void apply(VectorState& state) const override;
-
+#ifdef QSIM_USE_CUDA
+  void applyGpu(VectorState& state, double* devPtr) const override;
+#endif
  private:
   int controlBit;
   int targetBit;
 };
+
 }  // namespace qsim
