@@ -62,9 +62,6 @@ __global__ void applySingleQubitGateK(
                         matrix[1] * pairAmplitudesOld.second;
   ptrAmps[pair.second] = matrix[2] * pairAmplitudesOld.first +
                          matrix[3] * pairAmplitudesOld.second;
-
-  // fix pointer, dont need state in device, just start ptr and total size of
-  // array
 }
 
 /**
@@ -118,7 +115,8 @@ namespace qsim {
 namespace gpu {
 
 void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
-                               double* devPtr, const Matrix2& matrix) {
+                               std::complex<double>* devPtr,
+                               const Matrix2& matrix) {
   cuda::std::array<cuda::std::complex<double>, 4> matrixGpu;
   matrixGpu[0] = matrix[0][0];  // 0,1
   matrixGpu[1] = matrix[0][1];  // 2,3
@@ -131,13 +129,37 @@ void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
 
   applySingleQubitGateK<<<1, 256>>>(qubit, size, sizeBytes, ptrGpu, matrixGpu);
 
-  // applySingle<<<>>>();
+  CUDA_CHECK(cudaGetLastError());
 };
 
-void startApplyCnotGate(VectorState& state, double* devPtr, int controlBit,
-                        int targetBit) {
+void startApplyCnotGate(VectorState& state, std::complex<double>* devPtr,
+                        int controlBit, int targetBit) {
 
 };
+
+std::complex<double>* upload(VectorState& state) {
+  size_t stateSizeBytes = state.getSize() * sizeof(double) * 2;
+  std::complex<double>* devPtr = nullptr;
+
+  CUDA_CHECK(
+      cudaHostRegister(state.data(), stateSizeBytes, cudaHostRegisterDefault));
+
+  CUDA_CHECK(cudaMalloc(&devPtr, stateSizeBytes));
+
+  CUDA_CHECK(
+      cudaMemcpy(devPtr, state.data(), stateSizeBytes, cudaMemcpyDefault));
+
+  return devPtr;
+}
+
+void download(VectorState& state, std::complex<double>* devPtr) {
+  size_t stateSizeBytes = state.getSize() * sizeof(double) * 2;
+
+  CUDA_CHECK(
+      cudaMemcpy(state.data(), devPtr, stateSizeBytes, cudaMemcpyDefault));
+  CUDA_CHECK(cudaFree(devPtr));
+  CUDA_CHECK(cudaHostUnregister(state.data()));
+}
 
 }  // namespace gpu
 }  // namespace qsim

@@ -13,11 +13,13 @@ void CnotGate::apply(VectorState& state) const {
   qsim::applyCnotGate(state, controlBit, targetBit);
 }
 #ifdef QSIM_USE_CUDA
-void SingleQubitGate::applyGpu(VectorState& state, double* devPtr) const {
+void SingleQubitGate::applyGpu(VectorState& state,
+                               std::complex<double>* devPtr) const {
   qsim::gpu::startApplySingleQubitGate(state, qubit, devPtr, matrix);
 }
 
-void CnotGate::applyGpu(VectorState& state, double* devPtr) const {
+void CnotGate::applyGpu(VectorState& state,
+                        std::complex<double>* devPtr) const {
   qsim::gpu::startApplyCnotGate(state, devPtr, controlBit, targetBit);
 }
 #endif

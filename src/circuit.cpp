@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "qsim/gates.hpp"
+#include "qsim/gpu/gates.hpp"
 #include "qsim/operation.hpp"
 #include "qsim/state.hpp"
 
@@ -22,15 +23,14 @@ void Circuit::run(qsim::VectorState& state) {
   }
 };
 
- #ifdef QSIM_USE_CUDA
+#ifdef QSIM_USE_CUDA
 void Circuit::runGpu(qsim::VectorState& state) {
+  std::complex<double>* devPtr = qsim::gpu::upload(state);
   for (const std::unique_ptr<Operation>& ptrOp : circuitList) {
-
-    // Copy
-    double* devPtr = nullptr;
     ptrOp->applyGpu(state, devPtr);
-    // copy
   }
+
+  qsim::gpu::download(state, devPtr);
 };
 #endif
 
