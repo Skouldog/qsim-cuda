@@ -9,3 +9,4 @@ constexpr double kTol = 1e-9;
 
 void compareStates(qsim::VectorState& got,
                    const std::vector<std::complex<double>>& want, double tol);
+void compareStates(qsim::VectorState& got, qsim::VectorState& want, double tol);

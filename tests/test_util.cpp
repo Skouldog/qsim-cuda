@@ -15,3 +15,15 @@ void compareStates(qsim::VectorState& got,
     EXPECT_NEAR(std::abs(ptrStateVector[i] - want.at(i)), 0.0, tol);
   }
 }
+
+void compareStates(qsim::VectorState& got, qsim::VectorState& want,
+                   double tol) {
+  std::complex<double>* ptrStateVector = got.data();
+  std::complex<double>* ptrWantStateVector = want.data();
+
+  ASSERT_EQ(got.getSize(), want.getSize());
+
+  for (std::size_t i = 0; i < got.getSize(); i++) {
+    EXPECT_NEAR(std::abs(ptrStateVector[i] - ptrWantStateVector[i]), 0.0, tol);
+  }
+}
