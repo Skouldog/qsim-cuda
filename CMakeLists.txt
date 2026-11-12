@@ -56,10 +56,19 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 if(QSIM_USE_CUDA)
-    enable_language(CUDA)
-    target_compile_definitions(qsim_core PUBLIC QSIM_USE_CUDA)
-    # toDO add CU files
-    target_sources(qsim_core PRIVATE src/gpu/gates.cu)
+   enable_language(CUDA)
+   target_compile_definitions(qsim_core PUBLIC QSIM_USE_CUDA)
+   target_sources(qsim_core PRIVATE src/gpu/gates.cu)
+
+
+    add_executable(qsim_gpu_tests  
+      tests/gpu/gpu_test.cpp
+      tests/test_util.cpp
+)
+
+  target_include_directories(qsim_gpu_tests PRIVATE tests)
+  target_compile_options(qsim_gpu_tests PRIVATE -Wall -Wextra)
+  target_link_libraries(qsim_gpu_tests PRIVATE qsim_core GTest::gtest_main)
 endif()
 
 if(QSIM_COVERAGE)
@@ -96,5 +105,10 @@ enable_testing()
 
 include(GoogleTest)
 gtest_discover_tests(qsim_tests)
+
+if(QSIM_USE_CUDA)
+  gtest_discover_tests(qsim_gpu_tests)
+endif()
+
 
 
