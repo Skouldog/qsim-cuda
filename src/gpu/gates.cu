@@ -78,7 +78,7 @@ void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
   std::size_t size = state.getSize();
   std::size_t sizeBytes = state.getSize() * sizeof(double) * 2;
 
-  int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t> kThreads);
+  int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
 
   applySingleQubitGateK<<<blocks, kThreads>>>(qubit, size, sizeBytes, ptrGpu,
                                               matrixGpu);
