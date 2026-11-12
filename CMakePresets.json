@@ -23,7 +23,8 @@
             "inherits": "base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "QSIM_USE_CUDA": "ON"
+                "QSIM_USE_CUDA": "ON",
+                "CMAKE_CUDA_ARCHITECTURES": "75"
             }
         },
         {
@@ -86,6 +87,13 @@
         {
             "name": "coverage",
             "configurePreset": "coverage",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "cuda",
+            "configurePreset": "cuda",
             "output": {
                 "outputOnFailure": true
             }
