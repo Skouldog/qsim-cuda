@@ -37,3 +37,28 @@ TEST(HGate, HGateSuperpositionBigStateGPU) {
 
   compareStates(state, want, kTol);
 }
+
+TEST(GpuCircuit, MatchesCpuForMixedSingleQubitGates) {
+  qsim::VectorState state(20);
+  qsim::VectorState stateGpu(20);
+
+  qsim::Circuit circuit;
+
+  circuit.add(qsim::gates::h(), 0);
+  circuit.add(qsim::gates::s(), 0);
+
+  circuit.add(qsim::gates::x(), 10);
+
+  circuit.add(qsim::gates::h(), 19);
+  circuit.add(qsim::gates::rz(0.3), 19);
+
+  circuit.add(qsim::gates::h(), 5);
+  circuit.add(qsim::gates::t(), 5);
+  circuit.add(qsim::gates::h(), 5);
+
+  circuit.run(state);
+
+  circuit.runGpu(stateGpu);
+
+  compareStates(stateGpu, state, kTol);
+}
