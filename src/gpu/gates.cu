@@ -25,22 +25,17 @@ inline void gpuAssert(cudaError_t code, const char* file, int line,
 }
 
 __device__ cuda::std::pair<std::size_t, std::size_t> get_pair(
-    cuda::std::complex<double>* ptrAmps, int qubit, std::size_t amps) {
-  std::size_t worker = threadIdx.x + blockDim.x * blockIdx.x;
+    cuda::std::complex<double>* ptrAmps, int qubit, std::size_t amps,
+    std::size_t workerId) {
+  std::size_t index =
+      ((workerId >> qubit) << (qubit + 1)) |         // Left Bitmasking
+      (((std::size_t{1} << qubit) - 1) & workerId);  // Right Bitmasking
+  // See gates.cpp for detailed process
 
-  if (worker < amps / 2) {
-    std::size_t index =
-        ((worker >> qubit) << (qubit + 1)) |         // Left Bitmasking
-        (((std::size_t{1} << qubit) - 1) & worker);  // Right Bitmasking
-    // See gates.cpp for detailed process
+  std::size_t indexPartner = index | (std::size_t{1} << qubit);
 
-    std::size_t indexPartner = index | (std::size_t{1} << qubit);
-
-    cuda::std::pair<std::size_t, std::size_t> pairIndices = {index,
-                                                             indexPartner};
-    return pairIndices;
-  }
-  return {0, 0};
+  cuda::std::pair<std::size_t, std::size_t> pairIndices = {index, indexPartner};
+  return pairIndices;
 }
 
 __global__ void applySingleQubitGateK(
@@ -49,67 +44,23 @@ __global__ void applySingleQubitGateK(
     cuda::std::array<cuda::std::complex<double>,
                      4>  // read matrix left to right, top to bottom
         matrix) {        // ptrAmps = devState beginning of Array
+  std::size_t workerId = threadIdx.x + blockDim.x * blockIdx.x;
 
-  cuda::std::pair<std::size_t, std::size_t> pair =
-      get_pair(ptrAmps, qubit, amps);
+  if (workerId < amps / 2) {
+    cuda::std::pair<std::size_t, std::size_t> pair =
+        get_pair(ptrAmps, qubit, amps, workerId);
 
-  cuda::std::pair<cuda::std::complex<double>, cuda::std::complex<double>>
-      pairAmplitudesOld;
-  pairAmplitudesOld.first = ptrAmps[pair.first];
-  pairAmplitudesOld.second = ptrAmps[pair.second];
+    cuda::std::pair<cuda::std::complex<double>, cuda::std::complex<double>>
+        pairAmplitudesOld;
+    pairAmplitudesOld.first = ptrAmps[pair.first];
+    pairAmplitudesOld.second = ptrAmps[pair.second];
 
-  ptrAmps[pair.first] = matrix[0] * pairAmplitudesOld.first +
-                        matrix[1] * pairAmplitudesOld.second;
-  ptrAmps[pair.second] = matrix[2] * pairAmplitudesOld.first +
-                         matrix[3] * pairAmplitudesOld.second;
+    ptrAmps[pair.first] = matrix[0] * pairAmplitudesOld.first +
+                          matrix[1] * pairAmplitudesOld.second;
+    ptrAmps[pair.second] = matrix[2] * pairAmplitudesOld.first +
+                           matrix[3] * pairAmplitudesOld.second;
+  };
 }
-
-/**
-int main(void) {
-  std::size_t amps = 1 << 3;
-  std::size_t stateSizeBytes = amps * sizeof(double);
-
-  const int threads = 256;
-
-  double* state = nullptr;
-
-  double* devState = nullptr;
-
-  // Buffer for CPU
-  CUDA_CHECK(cudaMallocHost(&state, stateSizeBytes));
-
-  // Buffer for GPU
-  CUDA_CHECK(cudaMalloc(&devState, stateSizeBytes));
-
-  // init arrays
-  for (size_t i = 0; i < amps; i++) {
-    state[i] = 1.0;
-  }
-
-  // CUDA_CHECK(cudaMemcpy(devState, state, stateSizeBytes, cudaMemcpyDefault));
-  // CUDA_CHECK(cudaMemset(devState, 0, stateSizeBytes));
-
-  int blocks = cuda::ceil_div(amps, threads);
-
-  // get_pair<<<blocks, threads>>>(devState, 0, amps);
-
-  CUDA_CHECK(cudaGetLastError());
-
-  CUDA_CHECK(cudaDeviceSynchronize());
-
-  CUDA_CHECK(cudaMemcpy(state, devState, stateSizeBytes, cudaMemcpyDefault));
-
-  for (size_t i = 0; i < amps; i++)
-    std::cout << "Paired with: " << state[i] << std::endl;
-
-  cudaFreeHost(state);
-
-  cudaFree(devState);
-
-  return 0;
-}
-
-*/
 
 namespace qsim {
 namespace gpu {
@@ -127,7 +78,10 @@ void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
   size_t size = state.getSize();
   size_t sizeBytes = state.getSize() * sizeof(double) * 2;
 
-  applySingleQubitGateK<<<1, 256>>>(qubit, size, sizeBytes, ptrGpu, matrixGpu);
+  int blocks = cuda::ceil_div(size / 2, kThreads);
+
+  applySingleQubitGateK<<<blocks, kThreads>>>(qubit, size, sizeBytes, ptrGpu,
+                                              matrixGpu);
 
   CUDA_CHECK(cudaGetLastError());
 };

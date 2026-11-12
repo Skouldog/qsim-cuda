@@ -2,6 +2,9 @@
 
 namespace qsim {
 namespace gpu {
+
+constexpr int kThreads = 256;
+
 void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
                                std::complex<double>* devPtr,
                                const Matrix2& matrix);
