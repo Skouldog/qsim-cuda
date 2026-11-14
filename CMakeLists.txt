@@ -87,6 +87,7 @@ tests/gates_test.cpp
 tests/state_test.cpp
 tests/test_util.cpp
 tests/circuit_by_reference_test.cpp
+tests/circuit_util.cpp
 )
 
 target_compile_definitions(qsim_tests PRIVATE TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/scripts/")
