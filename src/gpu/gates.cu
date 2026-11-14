@@ -86,9 +86,34 @@ void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
   CUDA_CHECK(cudaGetLastError());
 };
 
+__global__ void applyCnotGateK(VectorState& state,
+                               std::complex<double>* ptrAmps, int controlBit,
+                               int targetBit, std::size_t sizeBytes) {
+  std::size_t workerId = threadIdx.x + blockIdx.x * blockDim.x;
+
+  if (workerId < size / 2) {
+    cuda::std::pair<std::size_t, std::size_t> pair =
+        get_pair(ptrAmps, targetBit, sizeBytes, workerId);
+
+    if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
+      cuda::std::complex<double> temp = ptrAmps[pairIndices.second];
+      ptrAmps[pairIndices.second] = ptrAmps[pairIndices.first];
+      ptrAmps[pairIndices.first] = temp;
+    }
+  }
+}
+
 void startApplyCnotGate(VectorState& state, std::complex<double>* devPtr,
                         int controlBit, int targetBit) {
+  reinterpret_cast<cuda::std::complex<double>*>(devPtr);
+  std::size_t size = state.getSize();
+  std::size_t sizeBytes = state.getSize() * sizeof(double) * 2;
 
+  int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
+  applyCnotGateK<<<blocks, kThreads>>>(state, devPtr, controlBit, targetBit,
+                                       sizeBytes);
+
+  CUDA_CHECK(cudaGetLastError());
 };
 
 std::complex<double>* upload(VectorState& state) {
