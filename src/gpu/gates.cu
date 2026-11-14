@@ -25,8 +25,7 @@ inline void gpuAssert(cudaError_t code, const char* file, int line,
 }
 
 __device__ cuda::std::pair<std::size_t, std::size_t> get_pair(
-    cuda::std::complex<double>* ptrAmps, int qubit, std::size_t amps,
-    std::size_t workerId) {
+    cuda::std::complex<double>* ptrAmps, int qubit, std::size_t workerId) {
   std::size_t index =
       ((workerId >> qubit) << (qubit + 1)) |         // Left Bitmasking
       (((std::size_t{1} << qubit) - 1) & workerId);  // Right Bitmasking
@@ -48,7 +47,7 @@ __global__ void applySingleQubitGateK(
 
   if (workerId < amps / 2) {
     cuda::std::pair<std::size_t, std::size_t> pair =
-        get_pair(ptrAmps, qubit, amps, workerId);
+        get_pair(ptrAmps, qubit, workerId);
 
     cuda::std::pair<cuda::std::complex<double>, cuda::std::complex<double>>
         pairAmplitudesOld;
@@ -86,14 +85,14 @@ void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
   CUDA_CHECK(cudaGetLastError());
 };
 
-__global__ void applyCnotGateK(VectorState& state,
-                               std::complex<double>* ptrAmps, int controlBit,
-                               int targetBit, std::size_t sizeBytes) {
+__global__ void applyCnotGateK(cuda::std::complex<double>* ptrAmps,
+                               int controlBit, int targetBit, std::size_t size,
+                               std::size_t sizeBytes) {
   std::size_t workerId = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (workerId < size / 2) {
-    cuda::std::pair<std::size_t, std::size_t> pair =
-        get_pair(ptrAmps, targetBit, sizeBytes, workerId);
+    cuda::std::pair<std::size_t, std::size_t> pairIndices =
+        get_pair(ptrAmps, targetBit, workerId);
 
     if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
       cuda::std::complex<double> temp = ptrAmps[pairIndices.second];
@@ -105,12 +104,13 @@ __global__ void applyCnotGateK(VectorState& state,
 
 void startApplyCnotGate(VectorState& state, std::complex<double>* devPtr,
                         int controlBit, int targetBit) {
-  reinterpret_cast<cuda::std::complex<double>*>(devPtr);
+  cuda::std::complex<double>* gpuPtr =
+      reinterpret_cast<cuda::std::complex<double>*>(devPtr);
   std::size_t size = state.getSize();
   std::size_t sizeBytes = state.getSize() * sizeof(double) * 2;
 
   int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
-  applyCnotGateK<<<blocks, kThreads>>>(state, devPtr, controlBit, targetBit,
+  applyCnotGateK<<<blocks, kThreads>>>(gpuPtr, controlBit, targetBit, size,
                                        sizeBytes);
 
   CUDA_CHECK(cudaGetLastError());
