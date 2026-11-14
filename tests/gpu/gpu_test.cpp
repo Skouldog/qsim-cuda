@@ -62,3 +62,43 @@ TEST(GpuCircuit, MatchesCpuForMixedSingleQubitGates) {
 
   compareStates(stateGpu, state, kTol);
 }
+
+TEST(GpuCnotGate, MixesIndices) {
+  qsim::VectorState state(3);
+  qsim::Circuit circuit;
+
+  state.setAmplitudeOfIndex(0, {0.5, 0});
+  state.setAmplitudeOfIndex(1, {0.5, 0});
+  state.setAmplitudeOfIndex(2, {0.5, 0});
+  state.setAmplitudeOfIndex(3, {0.5, 0});
+
+  circuit.addCnot(0, 2);
+  circuit.runGpu(state);
+
+  std::vector<std::complex<double>> want = {
+      {0.5, 0}, {0, 0}, {0.5, 0}, {0, 0}, {0, 0}, {0.5, 0}, {0, 0}, {0.5, 0}};
+  compareStates(state, want, kTol);
+}
+
+TEST(GpuCircuit, CreatesGhzState) {
+  const int qubits = 20;
+
+  qsim::VectorState state(qubits);
+
+  qsim::Circuit circuit;
+
+  circuit.add(qsim::gates::h(), 0);
+  for (int i = 0; i < qubits - 1; i++) {
+    circuit.addCnot(i, i + 1);
+  }
+
+  circuit.runGpu(state);
+
+  const double s = 1.0 / std::sqrt(2.0);
+
+  std::size_t indices = std::size_t{1} << qubits;
+  std::vector<std::complex<double>> want(indices);
+  want.at(0) = {s, 0};
+  want.at(indices - 1) = {s, 0};
+  compareStates(state, want, kTol);
+}
