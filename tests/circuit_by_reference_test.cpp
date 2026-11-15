@@ -23,24 +23,13 @@ class CircuitReferenceParameterizedTestFixture
     : public ::testing::TestWithParam<json> {};
 
 TEST_P(CircuitReferenceParameterizedTestFixture, MatchesQiskitReference) {
-  const json& circuit = GetParam();
-
-  qsim::VectorState state(circuit["num_qubits"]);
-  qsim::Circuit cppCircuit;
-
-  for (const auto& gate : circuit["gates"]) {
-    std::string gateType = gate["gate"];
-    if (gateType == "cx") {
-      cppCircuit.addCnot(gate["qubits"][0], gate["qubits"][1]);
-    } else if (gateType == "rz") {
-      cppCircuit.add(qsim::gates::rz(gate["params"][0]), gate["qubits"][0]);
-    } else {
-      cppCircuit.add(gateMap.at(gateType), gate["qubits"][0]);
-    }
-  }
+  const json& circuitJson = GetParam();
+  qsim::VectorState state(circuitJson["num_qubits"]);
+  qsim::Circuit cppCircuit = buildCircuitFromJson(circuitJson);
 
   cppCircuit.run(state);
-  std::vector<std::complex<double>> expectedState = getExpectedVector(circuit);
+  std::vector<std::complex<double>> expectedState =
+      getExpectedVector(circuitJson);
   compareStates(state, expectedState, kTol);
 }
 

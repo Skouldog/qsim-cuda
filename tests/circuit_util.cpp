@@ -43,3 +43,19 @@ std::vector<std::complex<double>> getExpectedVector(const json& circuit) {
 
   return expectedAmps;
 }
+
+qsim::Circuit buildCircuitFromJson(const json& circuitJson) {
+  qsim::Circuit cppCircuit;
+
+  for (const auto& gate : circuitJson["gates"]) {
+    std::string gateType = gate["gate"];
+    if (gateType == "cx") {
+      cppCircuit.addCnot(gate["qubits"][0], gate["qubits"][1]);
+    } else if (gateType == "rz") {
+      cppCircuit.add(qsim::gates::rz(gate["params"][0]), gate["qubits"][0]);
+    } else {
+      cppCircuit.add(gateMap.at(gateType), gate["qubits"][0]);
+    }
+  }
+  return cppCircuit;
+}
