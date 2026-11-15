@@ -63,12 +63,16 @@ if(QSIM_USE_CUDA)
 
     add_executable(qsim_gpu_tests  
       tests/gpu/gpu_test.cpp
+      tests/gpu/circuit_by_reference_test.cpp
       tests/test_util.cpp
-)
+      tests/circuit_util.cpp
+    )
+    target_compile_definitions(qsim_gpu_tests PRIVATE TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/scripts/")
 
   target_include_directories(qsim_gpu_tests PRIVATE tests)
   target_compile_options(qsim_gpu_tests PRIVATE -Wall -Wextra)
-  target_link_libraries(qsim_gpu_tests PRIVATE qsim_core GTest::gtest_main)
+  target_link_libraries(qsim_gpu_tests PRIVATE qsim_core GTest::gtest_main nlohmann_json::nlohmann_json)
+
 endif()
 
 if(QSIM_COVERAGE)
