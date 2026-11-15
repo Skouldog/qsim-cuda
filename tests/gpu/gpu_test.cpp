@@ -63,6 +63,39 @@ TEST(GpuCircuit, MatchesCpuForMixedSingleQubitGates) {
   compareStates(stateGpu, state, kTol);
 }
 
+TEST(GpuCircuit, MatchesCpuForCnotAcrossBlocks) {
+  qsim::VectorState state(20);
+  qsim::VectorState stateGpu(20);
+
+  qsim::Circuit circuit;
+
+  circuit.add(qsim::gates::h(), 0);
+  circuit.add(qsim::gates::h(), 3);
+  circuit.add(qsim::gates::h(), 9);
+  circuit.add(qsim::gates::h(), 12);
+  circuit.add(qsim::gates::h(), 19);
+
+  circuit.add(qsim::gates::t(), 0);
+  circuit.add(qsim::gates::t(), 3);
+  circuit.add(qsim::gates::s(), 9);
+
+  circuit.add(qsim::gates::rz(0.7), 19);
+  circuit.addCnot(0, 15);
+  circuit.addCnot(19, 2);
+  circuit.addCnot(12, 9);
+  circuit.addCnot(9, 3);
+
+  circuit.add(qsim::gates::h(), 15);
+  circuit.add(qsim::gates::h(), 2);
+  circuit.add(qsim::gates::h(), 3);
+
+  circuit.run(state);
+
+  circuit.runGpu(stateGpu);
+
+  compareStates(stateGpu, state, kTol);
+}
+
 TEST(GpuCnotGate, MixesIndices) {
   qsim::VectorState state(3);
   qsim::Circuit circuit;
