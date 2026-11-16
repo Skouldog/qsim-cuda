@@ -1,7 +1,10 @@
 #pragma once
 
+#include <complex>
 #include <nlohmann/json.hpp>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "qsim/circuit.hpp"
 #include "qsim/gates.hpp"

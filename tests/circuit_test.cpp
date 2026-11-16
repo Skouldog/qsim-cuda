@@ -1,12 +1,12 @@
 #include "qsim/circuit.hpp"
 
+#include <cmath>
 #include <complex>
 #include <cstddef>
 #include <vector>
 
 #include "gtest/gtest.h"
 #include "qsim/gates.hpp"
-#include "qsim/operation.hpp"
 #include "qsim/state.hpp"
 #include "test_util.hpp"
 

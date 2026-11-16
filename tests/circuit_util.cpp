@@ -1,6 +1,7 @@
 #include "circuit_util.hpp"
 
 #include <complex>
+#include <cstddef>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -8,11 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "qsim/circuit.hpp"
 #include "qsim/gates.hpp"
-#include "qsim/state.hpp"
-#include "test_util.hpp"
 
 using json = nlohmann::json;
 

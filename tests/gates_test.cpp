@@ -1,10 +1,10 @@
 #include "qsim/gates.hpp"
 
-#include <array>
 #include <cmath>
 #include <complex>
 #include <cstddef>
 #include <numbers>
+#include <utility>
 #include <vector>
 
 #include "gtest/gtest.h"

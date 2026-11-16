@@ -1,3 +1,8 @@
+#include <cmath>
+#include <complex>
+#include <cstddef>
+#include <vector>
+
 #include "gtest/gtest.h"
 #include "qsim/circuit.hpp"
 #include "qsim/gates.hpp"

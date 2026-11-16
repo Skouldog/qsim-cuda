@@ -1,5 +1,10 @@
 #pragma once
 
+#include <complex>
+
+#include "qsim/gates.hpp"
+#include "qsim/state.hpp"
+
 namespace qsim {
 namespace gpu {
 

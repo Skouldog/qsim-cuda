@@ -1,15 +1,11 @@
 #include <complex>
-#include <fstream>
 #include <nlohmann/json.hpp>
-#include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "circuit_util.hpp"
 #include "gtest/gtest.h"
 #include "qsim/circuit.hpp"
-#include "qsim/gates.hpp"
 #include "qsim/state.hpp"
 #include "test_util.hpp"
 

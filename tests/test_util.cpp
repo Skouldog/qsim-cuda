@@ -1,6 +1,7 @@
 #include "test_util.hpp"
 
 #include <complex>
+#include <cstddef>
 #include <vector>
 
 #include "gtest/gtest.h"
