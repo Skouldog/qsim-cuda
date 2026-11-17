@@ -23,7 +23,7 @@ inline void gpuAssert(cudaError_t code, const char* file, int line,
   }
 }
 
-__device__ cuda::std::pair<std::size_t, std::size_t> get_pair(
+__device__ cuda::std::pair<std::size_t, std::size_t> getPair(
     int qubit, std::size_t workerId) {
   std::size_t index =
       ((workerId >> qubit) << (qubit + 1)) |         // Left Bitmasking
@@ -44,7 +44,7 @@ __global__ void applySingleQubitGateK(
   std::size_t workerId = threadIdx.x + blockDim.x * blockIdx.x;
 
   if (workerId < amps / 2) {
-    cuda::std::pair<std::size_t, std::size_t> pair = get_pair(qubit, workerId);
+    cuda::std::pair<std::size_t, std::size_t> pair = getPair(qubit, workerId);
 
     cuda::std::pair<cuda::std::complex<double>, cuda::std::complex<double>>
         pairAmplitudesOld;
@@ -86,7 +86,7 @@ __global__ void applyCnotGateK(cuda::std::complex<double>* ptrAmps,
 
   if (workerId < size / 2) {
     cuda::std::pair<std::size_t, std::size_t> pairIndices =
-        get_pair(targetBit, workerId);
+        getPair(targetBit, workerId);
 
     if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
       cuda::std::complex<double> temp = ptrAmps[pairIndices.second];
