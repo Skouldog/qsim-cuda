@@ -5,7 +5,6 @@
 #include <cuda/std/array>
 #include <cuda/std/complex>
 #include <cuda/std/utility>
-#include <iostream>
 
 #include "qsim/gates.hpp"
 #include "qsim/gpu/gates.hpp"
@@ -25,7 +24,7 @@ inline void gpuAssert(cudaError_t code, const char* file, int line,
 }
 
 __device__ cuda::std::pair<std::size_t, std::size_t> get_pair(
-    cuda::std::complex<double>* ptrAmps, int qubit, std::size_t workerId) {
+    int qubit, std::size_t workerId) {
   std::size_t index =
       ((workerId >> qubit) << (qubit + 1)) |         // Left Bitmasking
       (((std::size_t{1} << qubit) - 1) & workerId);  // Right Bitmasking
@@ -38,16 +37,14 @@ __device__ cuda::std::pair<std::size_t, std::size_t> get_pair(
 }
 
 __global__ void applySingleQubitGateK(
-    int qubit, std::size_t amps, std::size_t sizeBytes,
-    cuda::std::complex<double>* ptrAmps,
+    int qubit, std::size_t amps, cuda::std::complex<double>* ptrAmps,
     cuda::std::array<cuda::std::complex<double>,
                      4>  // read matrix left to right, top to bottom
         matrix) {        // ptrAmps = devState beginning of Array
   std::size_t workerId = threadIdx.x + blockDim.x * blockIdx.x;
 
   if (workerId < amps / 2) {
-    cuda::std::pair<std::size_t, std::size_t> pair =
-        get_pair(ptrAmps, qubit, workerId);
+    cuda::std::pair<std::size_t, std::size_t> pair = get_pair(qubit, workerId);
 
     cuda::std::pair<cuda::std::complex<double>, cuda::std::complex<double>>
         pairAmplitudesOld;
@@ -58,7 +55,7 @@ __global__ void applySingleQubitGateK(
                           matrix[1] * pairAmplitudesOld.second;
     ptrAmps[pair.second] = matrix[2] * pairAmplitudesOld.first +
                            matrix[3] * pairAmplitudesOld.second;
-  };
+  }
 }
 
 namespace qsim {
@@ -75,24 +72,21 @@ void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
   cuda::std::complex<double>* ptrGpu =
       reinterpret_cast<cuda::std::complex<double>*>(devPtr);
   std::size_t size = state.getSize();
-  std::size_t sizeBytes = state.getSize() * sizeof(double) * 2;
-
   int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
 
-  applySingleQubitGateK<<<blocks, kThreads>>>(qubit, size, sizeBytes, ptrGpu,
-                                              matrixGpu);
+  applySingleQubitGateK<<<blocks, kThreads>>>(qubit, size, ptrGpu, matrixGpu);
 
   CUDA_CHECK(cudaGetLastError());
-};
+}
 
 __global__ void applyCnotGateK(cuda::std::complex<double>* ptrAmps,
-                               int controlBit, int targetBit, std::size_t size,
-                               std::size_t sizeBytes) {
+                               int controlBit, int targetBit,
+                               std::size_t size) {
   std::size_t workerId = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (workerId < size / 2) {
     cuda::std::pair<std::size_t, std::size_t> pairIndices =
-        get_pair(ptrAmps, targetBit, workerId);
+        get_pair(targetBit, workerId);
 
     if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
       cuda::std::complex<double> temp = ptrAmps[pairIndices.second];
@@ -107,14 +101,12 @@ void startApplyCnotGate(VectorState& state, std::complex<double>* devPtr,
   cuda::std::complex<double>* gpuPtr =
       reinterpret_cast<cuda::std::complex<double>*>(devPtr);
   std::size_t size = state.getSize();
-  std::size_t sizeBytes = state.getSize() * sizeof(double) * 2;
 
   int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
-  applyCnotGateK<<<blocks, kThreads>>>(gpuPtr, controlBit, targetBit, size,
-                                       sizeBytes);
+  applyCnotGateK<<<blocks, kThreads>>>(gpuPtr, controlBit, targetBit, size);
 
   CUDA_CHECK(cudaGetLastError());
-};
+}
 
 std::complex<double>* upload(VectorState& state) {
   size_t stateSizeBytes = state.getSize() * sizeof(double) * 2;
