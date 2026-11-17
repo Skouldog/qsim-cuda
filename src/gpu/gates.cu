@@ -82,7 +82,7 @@ __global__ void applyCnotGateKernel(cuda::std::complex<double>* d_amps,
 }
 }  // namespace
 
-void startApplySingleQubitGate(qsim::VectorState& state, const int qubit,
+void startApplySingleQubitGate(const qsim::VectorState& state, const int qubit,
                                std::complex<double>* d_amps,
                                const Matrix2& matrix) {
   const cuda::std::array<cuda::std::complex<double>, 4> matrixGpu = {
@@ -99,8 +99,9 @@ void startApplySingleQubitGate(qsim::VectorState& state, const int qubit,
   CUDA_CHECK(cudaGetLastError());
 }
 
-void startApplyCnotGate(qsim::VectorState& state, std::complex<double>* d_amps,
-                        const int controlBit, const int targetBit) {
+void startApplyCnotGate(const qsim::VectorState& state,
+                        std::complex<double>* d_amps, const int controlBit,
+                        const int targetBit) {
   const std::size_t size = state.getSize();
 
   const int blocks =

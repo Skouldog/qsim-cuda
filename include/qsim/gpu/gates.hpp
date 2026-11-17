@@ -10,11 +10,11 @@ namespace gpu {
 
 constexpr int kThreads = 256;
 
-void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
+void startApplySingleQubitGate(const qsim::VectorState& state, int qubit,
                                std::complex<double>* d_amps,
                                const Matrix2& matrix);
 
-void startApplyCnotGate(VectorState& state, std::complex<double>* d_amps,
+void startApplyCnotGate(const VectorState& state, std::complex<double>* d_amps,
                         int controlBit, int targetBit);
 std::complex<double>* upload(VectorState& state);
 
