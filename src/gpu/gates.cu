@@ -36,7 +36,7 @@ __device__ cuda::std::pair<std::size_t, std::size_t> getPair(
   return pairIndices;
 }
 
-__global__ void applySingleQubitGateK(
+__global__ void applySingleQubitGateKernel(
     int qubit, std::size_t amps, cuda::std::complex<double>* ptrAmps,
     cuda::std::array<cuda::std::complex<double>,
                      4>  // read matrix left to right, top to bottom
@@ -74,14 +74,15 @@ void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
   std::size_t size = state.getSize();
   int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
 
-  applySingleQubitGateK<<<blocks, kThreads>>>(qubit, size, ptrGpu, matrixGpu);
+  applySingleQubitGateKernel<<<blocks, kThreads>>>(qubit, size, ptrGpu,
+                                                   matrixGpu);
 
   CUDA_CHECK(cudaGetLastError());
 }
 
-__global__ void applyCnotGateK(cuda::std::complex<double>* ptrAmps,
-                               int controlBit, int targetBit,
-                               std::size_t size) {
+__global__ void applyCnotGateKernel(cuda::std::complex<double>* ptrAmps,
+                                    int controlBit, int targetBit,
+                                    std::size_t size) {
   std::size_t workerId = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (workerId < size / 2) {
@@ -103,7 +104,8 @@ void startApplyCnotGate(VectorState& state, std::complex<double>* devPtr,
   std::size_t size = state.getSize();
 
   int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
-  applyCnotGateK<<<blocks, kThreads>>>(gpuPtr, controlBit, targetBit, size);
+  applyCnotGateKernel<<<blocks, kThreads>>>(gpuPtr, controlBit, targetBit,
+                                            size);
 
   CUDA_CHECK(cudaGetLastError());
 }
