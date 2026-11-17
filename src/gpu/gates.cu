@@ -1,6 +1,7 @@
 #include <cuda_runtime.h>
-#include <math.h>
 
+#include <cstdio>
+#include <cstdlib>
 #include <cuda/cmath>
 #include <cuda/std/array>
 #include <cuda/std/complex>
@@ -41,12 +42,12 @@ __device__ cuda::std::pair<std::size_t, std::size_t> getPair(
   return pairIndices;
 }
 
+// d_amps = device State beginning of Array
+// matrix = left to right, top to bottom
 __global__ void applySingleQubitGateKernel(
     const int qubit, const std::size_t numAmps,
     cuda::std::complex<double>* d_amps,
-    const cuda::std::array<cuda::std::complex<double>,
-                           4>  // read matrix left to right, top to bottom
-        matrix) {              // d_amps = device State beginning of Array
+    const cuda::std::array<cuda::std::complex<double>, 4> matrix) {
   const std::size_t workerId = threadIdx.x + blockDim.x * blockIdx.x;
 
   if (workerId < numAmps / 2) {
@@ -114,7 +115,7 @@ void startApplyCnotGate(const qsim::VectorState& state,
 }
 
 std::complex<double>* upload(VectorState& state) {
-  const size_t stateSizeBytes = state.getSize() * sizeof(double) * 2;
+  const size_t stateSizeBytes = state.getSize() * sizeof(std::complex<double>);
   std::complex<double>* d_amps = nullptr;
 
   CUDA_CHECK(
@@ -129,7 +130,7 @@ std::complex<double>* upload(VectorState& state) {
 }
 
 void download(VectorState& state, std::complex<double>* d_amps) {
-  const size_t stateSizeBytes = state.getSize() * sizeof(double) * 2;
+  const size_t stateSizeBytes = state.getSize() * sizeof(std::complex<double>);
 
   CUDA_CHECK(
       cudaMemcpy(state.data(), d_amps, stateSizeBytes, cudaMemcpyDefault));
