@@ -14,6 +14,10 @@
     gpuAssert((ans), __FILE__, __LINE__); \
   }
 
+namespace qsim {
+namespace gpu {
+namespace {
+
 inline void gpuAssert(cudaError_t code, const char* file, int line,
                       bool abort = true) {
   if (code != cudaSuccess) {
@@ -58,8 +62,23 @@ __global__ void applySingleQubitGateKernel(
   }
 }
 
-namespace qsim {
-namespace gpu {
+__global__ void applyCnotGateKernel(cuda::std::complex<double>* d_amps,
+                                    int controlBit, int targetBit,
+                                    std::size_t numAmps) {
+  std::size_t workerId = threadIdx.x + blockIdx.x * blockDim.x;
+
+  if (workerId < numAmps / 2) {
+    cuda::std::pair<std::size_t, std::size_t> pairIndices =
+        getPair(targetBit, workerId);
+
+    if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
+      cuda::std::complex<double> temp = d_amps[pairIndices.second];
+      d_amps[pairIndices.second] = d_amps[pairIndices.first];
+      d_amps[pairIndices.first] = temp;
+    }
+  }
+}
+}  // namespace
 
 void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
                                std::complex<double>* d_amps,
@@ -78,23 +97,6 @@ void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
       matrixGpu);
 
   CUDA_CHECK(cudaGetLastError());
-}
-
-__global__ void applyCnotGateKernel(cuda::std::complex<double>* d_amps,
-                                    int controlBit, int targetBit,
-                                    std::size_t numAmps) {
-  std::size_t workerId = threadIdx.x + blockIdx.x * blockDim.x;
-
-  if (workerId < numAmps / 2) {
-    cuda::std::pair<std::size_t, std::size_t> pairIndices =
-        getPair(targetBit, workerId);
-
-    if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
-      cuda::std::complex<double> temp = d_amps[pairIndices.second];
-      d_amps[pairIndices.second] = d_amps[pairIndices.first];
-      d_amps[pairIndices.first] = temp;
-    }
-  }
 }
 
 void startApplyCnotGate(VectorState& state, std::complex<double>* d_amps,
