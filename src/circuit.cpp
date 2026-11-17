@@ -25,12 +25,12 @@ void Circuit::run(qsim::VectorState& state) {
 
 #ifdef QSIM_USE_CUDA
 void Circuit::runGpu(qsim::VectorState& state) {
-  std::complex<double>* devPtr = qsim::gpu::upload(state);
+  std::complex<double>* d_amps = qsim::gpu::upload(state);
   for (const std::unique_ptr<Operation>& ptrOp : circuitList) {
-    ptrOp->applyGpu(state, devPtr);
+    ptrOp->applyGpu(state, d_amps);
   }
 
-  qsim::gpu::download(state, devPtr);
+  qsim::gpu::download(state, d_amps);
 };
 #endif
 

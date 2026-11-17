@@ -37,24 +37,24 @@ __device__ cuda::std::pair<std::size_t, std::size_t> getPair(
 }
 
 __global__ void applySingleQubitGateKernel(
-    int qubit, std::size_t amps, cuda::std::complex<double>* ptrAmps,
+    int qubit, std::size_t numAmps, cuda::std::complex<double>* d_amps,
     cuda::std::array<cuda::std::complex<double>,
                      4>  // read matrix left to right, top to bottom
-        matrix) {        // ptrAmps = devState beginning of Array
+        matrix) {        // d_amps = device State beginning of Array
   std::size_t workerId = threadIdx.x + blockDim.x * blockIdx.x;
 
-  if (workerId < amps / 2) {
+  if (workerId < numAmps / 2) {
     cuda::std::pair<std::size_t, std::size_t> pair = getPair(qubit, workerId);
 
     cuda::std::pair<cuda::std::complex<double>, cuda::std::complex<double>>
         pairAmplitudesOld;
-    pairAmplitudesOld.first = ptrAmps[pair.first];
-    pairAmplitudesOld.second = ptrAmps[pair.second];
+    pairAmplitudesOld.first = d_amps[pair.first];
+    pairAmplitudesOld.second = d_amps[pair.second];
 
-    ptrAmps[pair.first] = matrix[0] * pairAmplitudesOld.first +
-                          matrix[1] * pairAmplitudesOld.second;
-    ptrAmps[pair.second] = matrix[2] * pairAmplitudesOld.first +
-                           matrix[3] * pairAmplitudesOld.second;
+    d_amps[pair.first] = matrix[0] * pairAmplitudesOld.first +
+                         matrix[1] * pairAmplitudesOld.second;
+    d_amps[pair.second] = matrix[2] * pairAmplitudesOld.first +
+                          matrix[3] * pairAmplitudesOld.second;
   }
 }
 
@@ -62,75 +62,74 @@ namespace qsim {
 namespace gpu {
 
 void startApplySingleQubitGate(qsim::VectorState& state, int qubit,
-                               std::complex<double>* devPtr,
+                               std::complex<double>* d_amps,
                                const Matrix2& matrix) {
   cuda::std::array<cuda::std::complex<double>, 4> matrixGpu;
   matrixGpu[0] = matrix[0][0];  // 0,1
   matrixGpu[1] = matrix[0][1];  // 2,3
   matrixGpu[2] = matrix[1][0];
   matrixGpu[3] = matrix[1][1];
-  cuda::std::complex<double>* ptrGpu =
-      reinterpret_cast<cuda::std::complex<double>*>(devPtr);
+
   std::size_t size = state.getSize();
   int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
 
-  applySingleQubitGateKernel<<<blocks, kThreads>>>(qubit, size, ptrGpu,
-                                                   matrixGpu);
+  applySingleQubitGateKernel<<<blocks, kThreads>>>(
+      qubit, size, reinterpret_cast<cuda::std::complex<double>*>(d_amps),
+      matrixGpu);
 
   CUDA_CHECK(cudaGetLastError());
 }
 
-__global__ void applyCnotGateKernel(cuda::std::complex<double>* ptrAmps,
+__global__ void applyCnotGateKernel(cuda::std::complex<double>* d_amps,
                                     int controlBit, int targetBit,
-                                    std::size_t size) {
+                                    std::size_t numAmps) {
   std::size_t workerId = threadIdx.x + blockIdx.x * blockDim.x;
 
-  if (workerId < size / 2) {
+  if (workerId < numAmps / 2) {
     cuda::std::pair<std::size_t, std::size_t> pairIndices =
         getPair(targetBit, workerId);
 
     if ((pairIndices.first & (std::size_t{1} << controlBit)) != 0) {
-      cuda::std::complex<double> temp = ptrAmps[pairIndices.second];
-      ptrAmps[pairIndices.second] = ptrAmps[pairIndices.first];
-      ptrAmps[pairIndices.first] = temp;
+      cuda::std::complex<double> temp = d_amps[pairIndices.second];
+      d_amps[pairIndices.second] = d_amps[pairIndices.first];
+      d_amps[pairIndices.first] = temp;
     }
   }
 }
 
-void startApplyCnotGate(VectorState& state, std::complex<double>* devPtr,
+void startApplyCnotGate(VectorState& state, std::complex<double>* d_amps,
                         int controlBit, int targetBit) {
-  cuda::std::complex<double>* gpuPtr =
-      reinterpret_cast<cuda::std::complex<double>*>(devPtr);
   std::size_t size = state.getSize();
 
   int blocks = cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
-  applyCnotGateKernel<<<blocks, kThreads>>>(gpuPtr, controlBit, targetBit,
-                                            size);
+  applyCnotGateKernel<<<blocks, kThreads>>>(
+      reinterpret_cast<cuda::std::complex<double>*>(d_amps), controlBit,
+      targetBit, size);
 
   CUDA_CHECK(cudaGetLastError());
 }
 
 std::complex<double>* upload(VectorState& state) {
   size_t stateSizeBytes = state.getSize() * sizeof(double) * 2;
-  std::complex<double>* devPtr = nullptr;
+  std::complex<double>* d_amps = nullptr;
 
   CUDA_CHECK(
       cudaHostRegister(state.data(), stateSizeBytes, cudaHostRegisterDefault));
 
-  CUDA_CHECK(cudaMalloc(&devPtr, stateSizeBytes));
+  CUDA_CHECK(cudaMalloc(&d_amps, stateSizeBytes));
 
   CUDA_CHECK(
-      cudaMemcpy(devPtr, state.data(), stateSizeBytes, cudaMemcpyDefault));
+      cudaMemcpy(d_amps, state.data(), stateSizeBytes, cudaMemcpyDefault));
 
-  return devPtr;
+  return d_amps;
 }
 
-void download(VectorState& state, std::complex<double>* devPtr) {
+void download(VectorState& state, std::complex<double>* d_amps) {
   size_t stateSizeBytes = state.getSize() * sizeof(double) * 2;
 
   CUDA_CHECK(
-      cudaMemcpy(state.data(), devPtr, stateSizeBytes, cudaMemcpyDefault));
-  CUDA_CHECK(cudaFree(devPtr));
+      cudaMemcpy(state.data(), d_amps, stateSizeBytes, cudaMemcpyDefault));
+  CUDA_CHECK(cudaFree(d_amps));
   CUDA_CHECK(cudaHostUnregister(state.data()));
 }
 
