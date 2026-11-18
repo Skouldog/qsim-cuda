@@ -1,11 +1,11 @@
 #include <cuda_runtime.h>
 
-#include <cstdio>
-#include <cstdlib>
 #include <cuda/cmath>
 #include <cuda/std/array>
 #include <cuda/std/complex>
 #include <cuda/std/utility>
+#include <stdexcept>
+#include <string>
 
 #include "qsim/gates.hpp"
 #include "qsim/gpu/gates.hpp"
@@ -19,12 +19,12 @@ namespace qsim {
 namespace gpu {
 namespace {
 
-inline void gpuAssert(cudaError_t code, const char* file, int line,
-                      bool abort = true) {
+inline void gpuAssert(cudaError_t code, const char* file, int line) {
   if (code != cudaSuccess) {
-    fprintf(stderr, "CUDA Error: %s %s %d\n", cudaGetErrorString(code), file,
-            line);
-    if (abort) exit(code);
+    throw std::runtime_error(std::string("CUDA Error: ") +
+                             cudaGetErrorString(code) + std::string(" at ") +
+                             std::string(file) + std::string(":") +
+                             std::to_string(line));
   }
 }
 
