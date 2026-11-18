@@ -19,6 +19,7 @@ namespace qsim {
 namespace gpu {
 namespace {
 
+// TODO: move/create to cuda_check.hpp
 inline void gpuAssert(cudaError_t code, const char* file, int line) {
   if (code != cudaSuccess) {
     throw std::runtime_error(std::string("CUDA Error: ") +

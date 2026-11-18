@@ -58,7 +58,7 @@ endif()
 if(QSIM_USE_CUDA)
    enable_language(CUDA)
    target_compile_definitions(qsim_core PUBLIC QSIM_USE_CUDA)
-   target_sources(qsim_core PRIVATE src/gpu/gates.cu)
+   target_sources(qsim_core PRIVATE src/gpu/gates.cu src/gpu/device_buffer.cu)
 
 
     add_executable(qsim_gpu_tests  
