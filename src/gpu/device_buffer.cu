@@ -31,6 +31,15 @@ DeviceBuffer::DeviceBuffer(std::size_t sizeBytes)
   CUDA_CHECK(cudaMalloc(&d_amps_, sizeBytes_));
 }
 
+DeviceBuffer& DeviceBuffer::operator=(DeviceBuffer&& other) noexcept {
+  if (this != &other) {
+    cudaFree(d_amps_);
+    d_amps_ = std::exchange(other.d_amps_, nullptr);
+    sizeBytes_ = std::exchange(other.sizeBytes_, 0);
+  }
+  return *this;
+}
+
 DeviceBuffer::~DeviceBuffer() { cudaFree(d_amps_); }
 
 }  // namespace gpu
