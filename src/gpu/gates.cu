@@ -8,6 +8,7 @@
 #include <string>
 
 #include "qsim/gates.hpp"
+#include "qsim/gpu/device_buffer.hpp"
 #include "qsim/gpu/gates.hpp"
 
 #define CUDA_CHECK(ans)                   \
@@ -115,27 +116,24 @@ void startApplyCnotGate(const qsim::VectorState& state,
   CUDA_CHECK(cudaGetLastError());
 }
 
-std::complex<double>* upload(VectorState& state) {
+DeviceBuffer upload(VectorState& state) {
   const size_t stateSizeBytes = state.getSize() * sizeof(std::complex<double>);
-  std::complex<double>* d_amps = nullptr;
+  DeviceBuffer d_buffer(stateSizeBytes);
 
   CUDA_CHECK(
       cudaHostRegister(state.data(), stateSizeBytes, cudaHostRegisterDefault));
 
-  CUDA_CHECK(cudaMalloc(&d_amps, stateSizeBytes));
+  CUDA_CHECK(cudaMemcpy(d_buffer.data(), state.data(), stateSizeBytes,
+                        cudaMemcpyDefault));
 
-  CUDA_CHECK(
-      cudaMemcpy(d_amps, state.data(), stateSizeBytes, cudaMemcpyDefault));
-
-  return d_amps;
+  return d_buffer;
 }
 
-void download(VectorState& state, std::complex<double>* d_amps) {
-  const size_t stateSizeBytes = state.getSize() * sizeof(std::complex<double>);
+void download(VectorState& state, DeviceBuffer& d_buffer) {
+  const size_t stateSizeBytes = d_buffer.getSizeBytes();
 
-  CUDA_CHECK(
-      cudaMemcpy(state.data(), d_amps, stateSizeBytes, cudaMemcpyDefault));
-  CUDA_CHECK(cudaFree(d_amps));
+  CUDA_CHECK(cudaMemcpy(state.data(), d_buffer.data(), stateSizeBytes,
+                        cudaMemcpyDefault));
   CUDA_CHECK(cudaHostUnregister(state.data()));
 }
 

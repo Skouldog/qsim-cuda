@@ -1,7 +1,6 @@
 #pragma once
 #include <complex>
 #include <cstddef>
-#include <utility>
 
 namespace qsim {
 namespace gpu {

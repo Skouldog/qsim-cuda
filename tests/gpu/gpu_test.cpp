@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 #include "qsim/circuit.hpp"
 #include "qsim/gates.hpp"
+#include "qsim/gpu/device_buffer.hpp"
 #include "qsim/gpu/gates.hpp"
 #include "qsim/state.hpp"
 #include "test_util.hpp"
@@ -15,11 +16,12 @@ TEST(HGate, CreatesSuperpositionOnGPU) {
 
   const double s = 1.0 / std::sqrt(2.0);
 
-  std::complex<double>* d_amps = qsim::gpu::upload(state);
+  qsim::gpu::DeviceBuffer d_buffer = qsim::gpu::upload(state);
 
-  qsim::gpu::startApplySingleQubitGate(state, 0, d_amps, qsim::gates::h());
+  qsim::gpu::startApplySingleQubitGate(state, 0, d_buffer.data(),
+                                       qsim::gates::h());
 
-  qsim::gpu::download(state, d_amps);
+  qsim::gpu::download(state, d_buffer);
 
   std::vector<std::complex<double>> want = {{s, 0}, {s, 0}};
   compareStates(state, want, kTol);
@@ -33,12 +35,12 @@ TEST(HGate, HGateSuperpositionBigStateGPU) {
     want[amp] = {1.0 / std::sqrt(std::size_t{1} << qubits), 0};
   }
 
-  std::complex<double>* d_amps = qsim::gpu::upload(state);
+  qsim::gpu::DeviceBuffer d_buffer = qsim::gpu::upload(state);
   for (int qubit = 0; qubit < qubits; qubit++) {
-    qsim::gpu::startApplySingleQubitGate(state, qubit, d_amps,
+    qsim::gpu::startApplySingleQubitGate(state, qubit, d_buffer.data(),
                                          qsim::gates::h());
   }
-  qsim::gpu::download(state, d_amps);
+  qsim::gpu::download(state, d_buffer);
 
   compareStates(state, want, kTol);
 }
