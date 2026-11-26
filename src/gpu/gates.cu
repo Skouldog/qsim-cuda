@@ -104,9 +104,6 @@ DeviceBuffer upload(VectorState& state) {
   const size_t stateSizeBytes = state.getSize() * sizeof(std::complex<double>);
   DeviceBuffer d_buffer(stateSizeBytes);
 
-  CUDA_CHECK(
-      cudaHostRegister(state.data(), stateSizeBytes, cudaHostRegisterDefault));
-
   CUDA_CHECK(cudaMemcpy(d_buffer.data(), state.data(), stateSizeBytes,
                         cudaMemcpyDefault));
 
@@ -118,7 +115,6 @@ void download(VectorState& state, DeviceBuffer& d_buffer) {
 
   CUDA_CHECK(cudaMemcpy(state.data(), d_buffer.data(), stateSizeBytes,
                         cudaMemcpyDefault));
-  CUDA_CHECK(cudaHostUnregister(state.data()));
 }
 
 }  // namespace gpu
