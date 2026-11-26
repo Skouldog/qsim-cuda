@@ -9,8 +9,6 @@
 namespace qsim {
 namespace gpu {
 
-constexpr int kThreads = 256;
-
 void startApplySingleQubitGate(DeviceBuffer& d_buffer, const int qubit,
                                const Matrix2& matrix);
 

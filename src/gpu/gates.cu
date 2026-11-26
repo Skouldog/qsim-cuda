@@ -14,6 +14,8 @@ namespace qsim {
 namespace gpu {
 namespace {
 
+constexpr int kThreads = 256;
+
 __device__ cuda::std::pair<std::size_t, std::size_t> getPair(
     const int qubit, const std::size_t workerId) {
   const std::size_t index =
