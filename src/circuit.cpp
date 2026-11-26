@@ -28,7 +28,7 @@ void Circuit::run(qsim::VectorState& state) {
 void Circuit::runGpu(qsim::VectorState& state) {
   qsim::gpu::DeviceBuffer d_buffer = qsim::gpu::upload(state);
   for (const std::unique_ptr<Operation>& ptrOp : circuitList) {
-    ptrOp->applyGpu(state, d_buffer.data());
+    ptrOp->applyGpu(d_buffer);
   }
 
   qsim::gpu::download(state, d_buffer);

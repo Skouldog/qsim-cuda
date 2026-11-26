@@ -69,33 +69,33 @@ __global__ void applyCnotGateKernel(cuda::std::complex<double>* d_amps,
 }
 }  // namespace
 
-void startApplySingleQubitGate(const qsim::VectorState& state, const int qubit,
-                               std::complex<double>* d_amps,
+void startApplySingleQubitGate(DeviceBuffer& d_buffer, const int qubit,
                                const Matrix2& matrix) {
   const cuda::std::array<cuda::std::complex<double>, 4> matrixGpu = {
       matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]};
 
-  const std::size_t size = state.getSize();
+  const std::size_t size =
+      d_buffer.getSizeBytes() / sizeof(std::complex<double>);
   const int blocks =
       cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
 
   applySingleQubitGateKernel<<<blocks, kThreads>>>(
-      qubit, size, reinterpret_cast<cuda::std::complex<double>*>(d_amps),
+      qubit, size,
+      reinterpret_cast<cuda::std::complex<double>*>(d_buffer.data()),
       matrixGpu);
 
   CUDA_CHECK(cudaGetLastError());
 }
 
-void startApplyCnotGate(const qsim::VectorState& state,
-                        std::complex<double>* d_amps, const int controlBit,
+void startApplyCnotGate(DeviceBuffer& d_buffer, const int controlBit,
                         const int targetBit) {
-  const std::size_t size = state.getSize();
-
+  const std::size_t size =
+      d_buffer.getSizeBytes() / sizeof(std::complex<double>);
   const int blocks =
       cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
   applyCnotGateKernel<<<blocks, kThreads>>>(
-      reinterpret_cast<cuda::std::complex<double>*>(d_amps), controlBit,
-      targetBit, size);
+      reinterpret_cast<cuda::std::complex<double>*>(d_buffer.data()),
+      controlBit, targetBit, size);
 
   CUDA_CHECK(cudaGetLastError());
 }

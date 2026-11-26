@@ -1,6 +1,7 @@
 #include "qsim/operation.hpp"
 
 #include "qsim/gates.hpp"
+#include "qsim/gpu/device_buffer.hpp"
 #include "qsim/gpu/gates.hpp"
 
 namespace qsim {  // namespace qsim
@@ -13,14 +14,12 @@ void CnotGate::apply(VectorState& state) const {
   qsim::applyCnotGate(state, controlBit, targetBit);
 }
 #ifdef QSIM_USE_CUDA
-void SingleQubitGate::applyGpu(VectorState& state,
-                               std::complex<double>* d_amps) const {
-  qsim::gpu::startApplySingleQubitGate(state, qubit, d_amps, matrix);
+void SingleQubitGate::applyGpu(gpu::DeviceBuffer& d_buffer) const {
+  qsim::gpu::startApplySingleQubitGate(d_buffer, qubit, matrix);
 }
 
-void CnotGate::applyGpu(VectorState& state,
-                        std::complex<double>* d_amps) const {
-  qsim::gpu::startApplyCnotGate(state, d_amps, controlBit, targetBit);
+void CnotGate::applyGpu(gpu::DeviceBuffer& d_buffer) const {
+  qsim::gpu::startApplyCnotGate(d_buffer, controlBit, targetBit);
 }
 #endif
 }  // namespace qsim

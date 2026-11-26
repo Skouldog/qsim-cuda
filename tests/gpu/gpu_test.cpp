@@ -18,8 +18,7 @@ TEST(HGate, CreatesSuperpositionOnGPU) {
 
   qsim::gpu::DeviceBuffer d_buffer = qsim::gpu::upload(state);
 
-  qsim::gpu::startApplySingleQubitGate(state, 0, d_buffer.data(),
-                                       qsim::gates::h());
+  qsim::gpu::startApplySingleQubitGate(d_buffer, 0, qsim::gates::h());
 
   qsim::gpu::download(state, d_buffer);
 
@@ -37,8 +36,7 @@ TEST(HGate, HGateSuperpositionBigStateGPU) {
 
   qsim::gpu::DeviceBuffer d_buffer = qsim::gpu::upload(state);
   for (int qubit = 0; qubit < qubits; qubit++) {
-    qsim::gpu::startApplySingleQubitGate(state, qubit, d_buffer.data(),
-                                         qsim::gates::h());
+    qsim::gpu::startApplySingleQubitGate(d_buffer, qubit, qsim::gates::h());
   }
   qsim::gpu::download(state, d_buffer);
 
