@@ -76,8 +76,7 @@ void startApplySingleQubitGate(DeviceBuffer& d_buffer, const int qubit,
   const cuda::std::array<cuda::std::complex<double>, 4> matrixGpu = {
       matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]};
 
-  const std::size_t size =
-      d_buffer.getSizeBytes() / sizeof(std::complex<double>);
+  const std::size_t size = d_buffer.getSize();
   const int blocks =
       cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
 
@@ -91,8 +90,7 @@ void startApplySingleQubitGate(DeviceBuffer& d_buffer, const int qubit,
 
 void startApplyCnotGate(DeviceBuffer& d_buffer, const int controlBit,
                         const int targetBit) {
-  const std::size_t size =
-      d_buffer.getSizeBytes() / sizeof(std::complex<double>);
+  const std::size_t size = d_buffer.getSize();
   const int blocks =
       cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
   applyCnotGateKernel<<<blocks, kThreads>>>(
@@ -103,19 +101,17 @@ void startApplyCnotGate(DeviceBuffer& d_buffer, const int controlBit,
 }
 
 DeviceBuffer upload(VectorState& state) {
-  const size_t stateSizeBytes = state.getSize() * sizeof(std::complex<double>);
-  DeviceBuffer d_buffer(stateSizeBytes);
+  DeviceBuffer d_buffer(state.getSize());
 
-  CUDA_CHECK(cudaMemcpy(d_buffer.data(), state.data(), stateSizeBytes,
+  CUDA_CHECK(cudaMemcpy(d_buffer.data(), state.data(), d_buffer.getSizeBytes(),
                         cudaMemcpyDefault));
 
   return d_buffer;
 }
 
 void download(VectorState& state, DeviceBuffer& d_buffer) {
-  const size_t stateSizeBytes = d_buffer.getSizeBytes();
 
-  CUDA_CHECK(cudaMemcpy(state.data(), d_buffer.data(), stateSizeBytes,
+  CUDA_CHECK(cudaMemcpy(state.data(), d_buffer.data(), d_buffer.getSizeBytes(),
                         cudaMemcpyDefault));
 }
 

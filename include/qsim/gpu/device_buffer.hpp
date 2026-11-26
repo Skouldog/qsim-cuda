@@ -8,10 +8,10 @@ namespace gpu {
 class DeviceBuffer {
  private:
   std::complex<double>* d_amps_;
-  std::size_t sizeBytes_;
+  std::size_t size_;
 
  public:
-  explicit DeviceBuffer(std::size_t sizeBytes);
+  explicit DeviceBuffer(std::size_t size);
 
   // 5. Destructor
   ~DeviceBuffer();
@@ -25,16 +25,19 @@ class DeviceBuffer {
   // 3. Move Constructor DeviceBuffer b1 = move(b2)
 
   DeviceBuffer(DeviceBuffer&& other) noexcept
-      : d_amps_(other.d_amps_), sizeBytes_(other.sizeBytes_) {
+      : d_amps_(other.d_amps_), size_(other.size_) {
     other.d_amps_ = nullptr;
-    other.sizeBytes_ = 0;
+    other.size_ = 0;
   }
 
   // 4. Move assignment b1 = move(b2)
   DeviceBuffer& operator=(DeviceBuffer&& other) noexcept;
 
   std::complex<double>* data() { return d_amps_; }
-  std::size_t getSizeBytes() const { return sizeBytes_; }
+  std::size_t getSize() const { return size_; }
+  std::size_t getSizeBytes() const {
+    return size_ * sizeof(std::complex<double>);
+  }
 };
 
 }  // namespace gpu
