@@ -22,6 +22,12 @@ DeviceBuffer& DeviceBuffer::operator=(DeviceBuffer&& other) noexcept {
   return *this;
 }
 
+DeviceBuffer::DeviceBuffer(DeviceBuffer&& other) noexcept
+    : d_amps_(other.d_amps_), size_(other.size_) {
+  other.d_amps_ = nullptr;
+  other.size_ = 0;
+}
+
 DeviceBuffer::~DeviceBuffer() { cudaFree(d_amps_); }
 
 }  // namespace gpu
