@@ -7,7 +7,7 @@ namespace gpu {
 
 class DeviceBuffer {
  public:
-  explicit DeviceBuffer(std::size_t size);
+  explicit DeviceBuffer(std::size_t numAmps);
 
   ~DeviceBuffer();
 

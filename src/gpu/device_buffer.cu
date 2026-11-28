@@ -9,7 +9,8 @@
 namespace qsim {
 namespace gpu {
 
-DeviceBuffer::DeviceBuffer(std::size_t size) : d_amps_(nullptr), size_(size) {
+DeviceBuffer::DeviceBuffer(std::size_t numAmps)
+    : d_amps_(nullptr), size_(numAmps) {
   CUDA_CHECK(cudaMalloc(&d_amps_, getSizeBytes()));
 }
 
