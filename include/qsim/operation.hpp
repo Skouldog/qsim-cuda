@@ -17,13 +17,13 @@ class Operation {
 #ifdef QSIM_USE_CUDA
   virtual void applyGpu(gpu::DeviceBuffer& d_buffer) const = 0;
 #endif
-  virtual ~Operation() {};
+  virtual ~Operation() {}
 };
 
 class SingleQubitGate : public Operation {
  public:
   SingleQubitGate(qsim::Matrix2 matrix, int qubit)
-      : matrix(matrix), qubit(qubit) {};
+      : matrix(matrix), qubit(qubit) {}
   void apply(VectorState& state) const override;
 #ifdef QSIM_USE_CUDA
   void applyGpu(gpu::DeviceBuffer& d_buffer) const override;
@@ -36,7 +36,7 @@ class SingleQubitGate : public Operation {
 class CnotGate : public Operation {
  public:
   CnotGate(int controlBit, int targetBit)
-      : controlBit(controlBit), targetBit(targetBit) {};
+      : controlBit(controlBit), targetBit(targetBit) {}
 
   void apply(VectorState& state) const override;
 #ifdef QSIM_USE_CUDA

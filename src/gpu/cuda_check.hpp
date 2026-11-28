@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-#define CUDA_CHECK(ans) qsim::gpu::checkCuda((ans), __FILE__, __LINE__);
+#define CUDA_CHECK(ans) qsim::gpu::checkCuda((ans), __FILE__, __LINE__)
 
 namespace qsim {
 namespace gpu {
