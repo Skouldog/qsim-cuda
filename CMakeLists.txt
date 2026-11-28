@@ -66,6 +66,7 @@ if(QSIM_USE_CUDA)
       tests/gpu/circuit_by_reference_test.cpp
       tests/test_util.cpp
       tests/circuit_util.cpp
+      tests/gpu/device_buffer_test.cpp
     )
     target_compile_definitions(qsim_gpu_tests PRIVATE TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/scripts/")
 
