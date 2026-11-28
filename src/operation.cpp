@@ -1,10 +1,12 @@
 #include "qsim/operation.hpp"
 
 #include "qsim/gates.hpp"
+#ifdef QSIM_USE_CUDA
 #include "qsim/gpu/device_buffer.hpp"
 #include "qsim/gpu/gates.hpp"
+#endif
 
-namespace qsim {  // namespace qsim
+namespace qsim {
 
 void SingleQubitGate::apply(VectorState& state) const {
   qsim::applySingleQubitGate(state, qubit, matrix);

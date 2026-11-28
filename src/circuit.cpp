@@ -3,10 +3,12 @@
 #include <memory>
 
 #include "qsim/gates.hpp"
-#include "qsim/gpu/device_buffer.hpp"
-#include "qsim/gpu/gates.hpp"
 #include "qsim/operation.hpp"
 #include "qsim/state.hpp"
+#ifdef QSIM_USE_CUDA
+#include "qsim/gpu/device_buffer.hpp"
+#include "qsim/gpu/gates.hpp"
+#endif
 
 namespace qsim {
 
