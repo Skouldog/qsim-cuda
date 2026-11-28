@@ -33,8 +33,8 @@ __device__ cuda::std::pair<std::size_t, std::size_t> getPair(
 // d_amps = device State beginning of Array
 // matrix = left to right, top to bottom
 __global__ void applySingleQubitGateKernel(
-    const int qubit, const std::size_t numAmps,
-    cuda::std::complex<double>* d_amps,
+    cuda::std::complex<double>* d_amps, const std::size_t numAmps,
+    const int qubit,
     const cuda::std::array<cuda::std::complex<double>, 4> matrix) {
   const std::size_t workerId = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -54,8 +54,8 @@ __global__ void applySingleQubitGateKernel(
 }
 
 __global__ void applyCnotGateKernel(cuda::std::complex<double>* d_amps,
-                                    const int controlBit, const int targetBit,
-                                    const std::size_t numAmps) {
+                                    const std::size_t numAmps,
+                                    const int controlBit, const int targetBit) {
   const std::size_t workerId = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (workerId < numAmps / 2) {
@@ -81,9 +81,8 @@ void startApplySingleQubitGate(DeviceBuffer& d_buffer, const int qubit,
       cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
 
   applySingleQubitGateKernel<<<blocks, kThreads>>>(
-      qubit, size,
-      reinterpret_cast<cuda::std::complex<double>*>(d_buffer.data()),
-      matrixGpu);
+      reinterpret_cast<cuda::std::complex<double>*>(d_buffer.data()), size,
+      qubit, matrixGpu);
 
   CUDA_CHECK(cudaGetLastError());
 }
@@ -94,23 +93,20 @@ void startApplyCnotGate(DeviceBuffer& d_buffer, const int controlBit,
   const int blocks =
       cuda::ceil_div(size / 2, static_cast<std::size_t>(kThreads));
   applyCnotGateKernel<<<blocks, kThreads>>>(
-      reinterpret_cast<cuda::std::complex<double>*>(d_buffer.data()),
-      controlBit, targetBit, size);
+      reinterpret_cast<cuda::std::complex<double>*>(d_buffer.data()), size,
+      controlBit, targetBit);
 
   CUDA_CHECK(cudaGetLastError());
 }
 
 DeviceBuffer upload(VectorState& state) {
   DeviceBuffer d_buffer(state.getSize());
-
   CUDA_CHECK(cudaMemcpy(d_buffer.data(), state.data(), d_buffer.getSizeBytes(),
                         cudaMemcpyDefault));
-
   return d_buffer;
 }
 
 void download(VectorState& state, DeviceBuffer& d_buffer) {
-
   CUDA_CHECK(cudaMemcpy(state.data(), d_buffer.data(), d_buffer.getSizeBytes(),
                         cudaMemcpyDefault));
 }

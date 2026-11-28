@@ -14,8 +14,10 @@ void startApplySingleQubitGate(DeviceBuffer& d_buffer, const int qubit,
 
 void startApplyCnotGate(DeviceBuffer& d_buffer, const int controlBit,
                         const int targetBit);
+
 DeviceBuffer upload(VectorState& state);
 
 void download(VectorState& state, DeviceBuffer& d_buffer);
+
 }  // namespace gpu
 }  // namespace qsim
