@@ -1,8 +1,5 @@
 #pragma once
 
-#include <array>
-#include <complex>
-
 #include "qsim/gates.hpp"
 
 namespace qsim {
@@ -17,7 +14,7 @@ class Operation {
 #ifdef QSIM_USE_CUDA
   virtual void applyGpu(gpu::DeviceBuffer& d_buffer) const = 0;
 #endif
-  virtual ~Operation() {}
+  virtual ~Operation() = default;
 };
 
 class SingleQubitGate : public Operation {
